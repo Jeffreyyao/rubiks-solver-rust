@@ -31,14 +31,18 @@ fn _permute<const N: usize>(permutation: [i8; N], indices: &[i8; 4], clockwise: 
     return _perm;
 }
 
+fn _orient_edges(edge_orientations: [i8; 12], indices: &[i8; 4]) -> [i8; 12] {
+    let mut _edge_orientations = edge_orientations.clone();
+    for i in 0..4 {
+        _edge_orientations[indices[i] as usize] = (edge_orientations[indices[i] as usize] + 1) % 2;
+    }
+    return _edge_orientations;
+}
+
 fn _orient_corners(corner_orientations: [i8; 8], indices: &[i8; 4]) -> [i8; 8] {
     let mut _corner_orientations = corner_orientations.clone();
     for i in 0..4 {
         let incremented_orientation = if i % 2 == 0 { 1 } else { 2 };
-        println!(
-            "i: {}, cubie: {}, orientation: {}, incremented_orientation: {}",
-            i, indices[i], corner_orientations[indices[i] as usize], incremented_orientation
-        );
         _corner_orientations[indices[i] as usize] =
             (corner_orientations[indices[i] as usize] + incremented_orientation) % 3;
     }
@@ -83,30 +87,34 @@ impl Cube {
 
     fn u(self, clockwise: bool) -> Self {
         return Self {
-            corner_orientations: _permute(
-                _orient_corners(self.corner_orientations, &Self::U_CORNER_INDICES),
-                &Self::U_CORNER_INDICES,
-                clockwise,
-            ),
+            corner_orientations: _permute(self.corner_orientations, &Self::U_CORNER_INDICES, clockwise),
             corner_permutations: _permute(
                 self.corner_permutations,
                 &Self::U_CORNER_INDICES,
                 clockwise,
             ),
-            edge_orientations: self.edge_orientations,
+            edge_orientations: _permute(
+                _orient_edges(self.edge_orientations, &Self::U_EDGE_INDICES),
+                &Self::U_EDGE_INDICES,
+                clockwise,
+            ),
             edge_permutations: _permute(self.edge_permutations, &Self::U_EDGE_INDICES, clockwise),
         };
     }
 
     fn d(self, clockwise: bool) -> Self {
         return Self {
-            corner_orientations: self.corner_orientations,
+            corner_orientations: _permute(self.corner_orientations, &Self::D_CORNER_INDICES, clockwise),
             corner_permutations: _permute(
                 self.corner_permutations,
                 &Self::D_CORNER_INDICES,
                 clockwise,
             ),
-            edge_orientations: self.edge_orientations,
+            edge_orientations: _permute(
+                _orient_edges(self.edge_orientations, &Self::D_EDGE_INDICES),
+                &Self::D_EDGE_INDICES,
+                clockwise,
+            ),
             edge_permutations: _permute(self.edge_permutations, &Self::D_EDGE_INDICES, clockwise),
         };
     }
@@ -214,7 +222,10 @@ impl Cube {
         let s = s.replace(' ', "");
         let mut chars = s.chars().peekable();
         while let Some(face) = chars.next() {
-            if !matches!(face, 'u'|'U'|'d'|'D'|'l'|'L'|'r'|'R'|'f'|'F'|'b'|'B') {
+            if !matches!(
+                face,
+                'u' | 'U' | 'd' | 'D' | 'l' | 'L' | 'r' | 'R' | 'f' | 'F' | 'b' | 'B'
+            ) {
                 continue;
             }
             let prime = chars.peek().copied() == Some('\'');
