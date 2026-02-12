@@ -2,6 +2,7 @@ use std::{env, io};
 
 mod cube;
 mod solver;
+mod profile;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -25,7 +26,7 @@ fn main() {
             buffer.clear();
         }
     } else if args[1] == "debug" {
-        let cube = cube::Cube::new().apply_sequence("ulu");
+        let cube = cube::Cube::new().apply_sequence("dbfur'l'd");
         let moves_g0 = solver::Solver::solve_g0(cube);
         println!("Moves G0: {}", moves_g0.join(""));
     }
