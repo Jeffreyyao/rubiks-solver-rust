@@ -29,5 +29,7 @@ fn main() {
         let cube = cube::Cube::new().apply_sequence("dbfur'l'd");
         let moves_g0 = solver::Solver::solve_g0(cube);
         println!("Moves G0: {}", moves_g0.join(""));
+        let moves_g1 = solver::Solver::solve_g1(cube);
+        println!("Moves G1: {}", moves_g1.join(""));
     }
 }
