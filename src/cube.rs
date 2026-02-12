@@ -9,13 +9,13 @@
 // 4  FR   5  FL   6   BL   7   BR
 // 8  DF   9  DL   10  DB   11  DR
 
-pub type CornerOrientations = [i8; 8]; // orientaion of U/D faces
-pub type CornerPermutations = [i8; 8];
+pub type CornerOrientations = [u8; 8]; // orientaion of L/R faces
+pub type CornerPermutations = [u8; 8];
 
-pub type EdgeOrientations = [i8; 12]; // edge orientation flips on F/B moves
-pub type EdgePermutations = [i8; 12];
+pub type EdgeOrientations = [u8; 12]; // edge orientation flips on U/D moves
+pub type EdgePermutations = [u8; 12];
 
-fn _permute<const N: usize>(permutation: [i8; N], indices: &[i8; 4], clockwise: bool) -> [i8; N] {
+fn _permute<const N: usize>(permutation: [u8; N], indices: &[u8; 4], clockwise: bool) -> [u8; N] {
     let mut _perm = permutation.clone();
     for i in 0..4 {
         let p_index;
@@ -29,7 +29,7 @@ fn _permute<const N: usize>(permutation: [i8; N], indices: &[i8; 4], clockwise: 
     return _perm;
 }
 
-fn _orient_edges(edge_orientations: [i8; 12], indices: &[i8; 4]) -> [i8; 12] {
+fn _orient_edges(edge_orientations: [u8; 12], indices: &[u8; 4]) -> [u8; 12] {
     let mut _edge_orientations = edge_orientations.clone();
     for i in 0..4 {
         _edge_orientations[indices[i] as usize] = (edge_orientations[indices[i] as usize] + 1) % 2;
@@ -37,7 +37,7 @@ fn _orient_edges(edge_orientations: [i8; 12], indices: &[i8; 4]) -> [i8; 12] {
     return _edge_orientations;
 }
 
-fn _orient_corners(corner_orientations: [i8; 8], indices: &[i8; 4]) -> [i8; 8] {
+fn _orient_corners(corner_orientations: [u8; 8], indices: &[u8; 4]) -> [u8; 8] {
     let mut _corner_orientations = corner_orientations.clone();
     for i in 0..4 {
         let incremented_orientation = if i % 2 == 0 { 1 } else { 2 };
@@ -47,8 +47,7 @@ fn _orient_corners(corner_orientations: [i8; 8], indices: &[i8; 4]) -> [i8; 8] {
     return _corner_orientations;
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash)]
-#[derive(Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Cube {
     pub corner_orientations: CornerOrientations, // 3 orientations per corner
     pub corner_permutations: CornerPermutations, // 8 corners
@@ -63,31 +62,35 @@ impl Cube {
        calculating corner orientation requires incrementing
        orientation at specific corner indices
     */
-    const U_CORNER_INDICES: [i8; 4] = [0, 1, 2, 3];
-    const U_EDGE_INDICES: [i8; 4] = [0, 1, 2, 3];
-    const D_CORNER_INDICES: [i8; 4] = [7, 6, 5, 4];
-    const D_EDGE_INDICES: [i8; 4] = [11, 10, 9, 8];
-    const L_CORNER_INDICES: [i8; 4] = [2, 1, 5, 6];
-    const L_EDGE_INDICES: [i8; 4] = [1, 5, 9, 6];
-    const R_CORNER_INDICES: [i8; 4] = [0, 3, 7, 4];
-    const R_EDGE_INDICES: [i8; 4] = [3, 7, 11, 4];
-    const F_CORNER_INDICES: [i8; 4] = [1, 0, 4, 5];
-    const F_EDGE_INDICES: [i8; 4] = [0, 4, 8, 5];
-    const B_CORNER_INDICES: [i8; 4] = [3, 2, 6, 7];
-    const B_EDGE_INDICES: [i8; 4] = [2, 6, 10, 7];
+    const U_CORNER_INDICES: [u8; 4] = [0, 1, 2, 3];
+    const U_EDGE_INDICES: [u8; 4] = [0, 1, 2, 3];
+    const D_CORNER_INDICES: [u8; 4] = [7, 6, 5, 4];
+    const D_EDGE_INDICES: [u8; 4] = [11, 10, 9, 8];
+    const L_CORNER_INDICES: [u8; 4] = [2, 1, 5, 6];
+    const L_EDGE_INDICES: [u8; 4] = [1, 5, 9, 6];
+    const R_CORNER_INDICES: [u8; 4] = [0, 3, 7, 4];
+    const R_EDGE_INDICES: [u8; 4] = [3, 7, 11, 4];
+    const F_CORNER_INDICES: [u8; 4] = [1, 0, 4, 5];
+    const F_EDGE_INDICES: [u8; 4] = [0, 4, 8, 5];
+    const B_CORNER_INDICES: [u8; 4] = [3, 2, 6, 7];
+    const B_EDGE_INDICES: [u8; 4] = [2, 6, 10, 7];
 
     pub fn new() -> Self {
         Self {
             corner_orientations: [0; 8], // all corners are oriented 0
-            corner_permutations: (0..8).collect::<Vec<i8>>().try_into().unwrap(), // 0 to 7
+            corner_permutations: (0..8).collect::<Vec<u8>>().try_into().unwrap(), // 0 to 7
             edge_orientations: [0; 12],  // all edges are oriented 0
-            edge_permutations: (0..12).collect::<Vec<i8>>().try_into().unwrap(), // 0 to 11
+            edge_permutations: (0..12).collect::<Vec<u8>>().try_into().unwrap(), // 0 to 11
         }
     }
 
     pub fn u(self, clockwise: bool) -> Self {
         return Self {
-            corner_orientations: _permute(self.corner_orientations, &Self::U_CORNER_INDICES, clockwise),
+            corner_orientations: _permute(
+                _orient_corners(self.corner_orientations, &Self::U_CORNER_INDICES),
+                &Self::U_CORNER_INDICES,
+                clockwise,
+            ),
             corner_permutations: _permute(
                 self.corner_permutations,
                 &Self::U_CORNER_INDICES,
@@ -104,7 +107,11 @@ impl Cube {
 
     pub fn d(self, clockwise: bool) -> Self {
         return Self {
-            corner_orientations: _permute(self.corner_orientations, &Self::D_CORNER_INDICES, clockwise),
+            corner_orientations: _permute(
+                _orient_corners(self.corner_orientations, &Self::D_CORNER_INDICES),
+                &Self::D_CORNER_INDICES,
+                clockwise,
+            ),
             corner_permutations: _permute(
                 self.corner_permutations,
                 &Self::D_CORNER_INDICES,
@@ -122,7 +129,7 @@ impl Cube {
     pub fn l(self, clockwise: bool) -> Self {
         return Self {
             corner_orientations: _permute(
-                _orient_corners(self.corner_orientations, &Self::L_CORNER_INDICES),
+                self.corner_orientations,
                 &Self::L_CORNER_INDICES,
                 clockwise,
             ),
@@ -139,7 +146,7 @@ impl Cube {
     pub fn r(self, clockwise: bool) -> Self {
         return Self {
             corner_orientations: _permute(
-                _orient_corners(self.corner_orientations, &Self::R_CORNER_INDICES),
+                self.corner_orientations,
                 &Self::R_CORNER_INDICES,
                 clockwise,
             ),

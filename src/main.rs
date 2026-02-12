@@ -26,10 +26,14 @@ fn main() {
             buffer.clear();
         }
     } else if args[1] == "debug" {
-        let cube = cube::Cube::new().apply_sequence("dbfur'l'd");
-        let moves_g0 = solver::Solver::solve_g0(cube);
-        println!("Moves G0: {}", moves_g0.join(""));
-        let moves_g1 = solver::Solver::solve_g1(cube);
-        println!("Moves G1: {}", moves_g1.join(""));
+        // let cube = cube::Cube::new().apply_sequence("dbfur'l'd");
+        let cube = cube::Cube::new().apply_sequence("rur'u'r'fr'r'u'r'u'rur'f'");
+        let moves_g0 = solver::Solver::solve_g0(cube).join("");
+        let cube_g0 = cube.apply_sequence(&moves_g0);
+        println!("Moves G0: {}", moves_g0);
+        let moves_g1 = solver::Solver::solve_g1(cube_g0).join("");
+        let cube_g1 = cube_g0.apply_sequence(&moves_g1);
+        println!("Moves G1: {}", moves_g1);
+        cube_g1.dump();
     }
 }
