@@ -1,3 +1,5 @@
+use rand::{RngExt};
+
 // corners
 // 0  URF    1  UFL
 // 2  ULB    3  UBR
@@ -40,9 +42,8 @@ fn _orient_edges(edge_orientations: [u8; 12], indices: &[u8; 4]) -> [u8; 12] {
 fn _orient_corners(corner_orientations: [u8; 8], indices: &[u8; 4]) -> [u8; 8] {
     let mut _corner_orientations = corner_orientations.clone();
     for i in 0..4 {
-        let incremented_orientation = if i % 2 == 0 { 1 } else { 2 };
         _corner_orientations[indices[i] as usize] =
-            (corner_orientations[indices[i] as usize] + incremented_orientation) % 3;
+            (corner_orientations[indices[i] as usize] + ((i as u8 % 2) + 1)) % 3;
     }
     return _corner_orientations;
 }
@@ -58,7 +59,7 @@ pub struct Cube {
 impl Cube {
     /*
        indices in clockwise order for each face;
-       start index matters for corner indices because
+       first index matters for corner indices because
        calculating corner orientation requires incrementing
        orientation at specific corner indices
     */
@@ -74,6 +75,8 @@ impl Cube {
     const F_EDGE_INDICES: [u8; 4] = [0, 4, 8, 5];
     const B_CORNER_INDICES: [u8; 4] = [3, 2, 6, 7];
     const B_EDGE_INDICES: [u8; 4] = [2, 6, 10, 7];
+
+    pub const LR_MID_SLICE_EDGES: [u8; 4] = [0, 2, 8, 10];
 
     pub fn new() -> Self {
         Self {
@@ -244,6 +247,17 @@ impl Cube {
                 chars.next();
             }
             cube = cube.apply_move(face, prime, half_turn);
+        }
+        cube
+    }
+
+    pub fn scramble(self, n: u32) -> Self {
+        let mut cube = self;
+        let moves = "udlrfbu'd'l'r'f'b'";
+        let mut rng = rand::rng();
+        for _ in 0..n {
+            let move_char = moves.chars().nth(rng.random_range(0..moves.len())).unwrap();
+            cube = cube.apply_move(move_char, false, false);
         }
         cube
     }

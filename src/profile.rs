@@ -15,11 +15,10 @@ impl Profile {
 
     pub fn report(self, message: &str) {
         let elapsed = self.start_time.unwrap().elapsed();
-        println!("[{}]-{} in {:.3?}", self.name, message, elapsed);
+        println!("[{}] {} in {:.3?}", self.name, message, elapsed);
     }
 
     pub fn end(self) {
-        let elapsed = self.start_time.unwrap().elapsed();
-        println!("[{}] finished in {:.3?}", self.name, elapsed);
+        self.report("solved");
     }
 }
