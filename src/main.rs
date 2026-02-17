@@ -27,8 +27,9 @@ fn main() {
         }
     } else if args[1] == "debug" {
         // let cube = cube::Cube::new().apply_sequence("dbfur'l'd");
-        let cube = cube::Cube::new().apply_sequence("rur'u'r'frru'r'u'rur'f'");
-        // let cube = cube::Cube::new().scramble(20);
+        // let cube = cube::Cube::new().apply_sequence("rur'u'r'frru'r'u'rur'f'");
+        let (cube, scrambled_moves) = cube::Cube::new().scramble(20);
+        println!("Scrambled moves: {}", scrambled_moves);
         cube.dump();
         let moves_g0 = solver::Solver::solve_g0(cube).join("");
         let cube_g0 = cube.apply_sequence(&moves_g0);

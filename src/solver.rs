@@ -81,8 +81,6 @@ impl Solver {
             return vec![];
         }
 
-        let mut min_move_size = 0;
-
         let p = profile::Profile::start("solve_g1");
 
         let mut queue = VecDeque::from([(cube, vec![])]);
@@ -92,10 +90,6 @@ impl Solver {
             if Self::is_solved_g1(current_cube) {
                 p.end();
                 return current_moves;
-            }
-            if current_moves.len() > min_move_size {
-                min_move_size = current_moves.len();
-                println!("move size: {}, visited_g1_indices size: {}", min_move_size, visited_g1_indices.len());
             }
             for m in Self::G1_MOVES {
                 let new_cube = current_cube.apply_sequence(m);

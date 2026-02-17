@@ -251,14 +251,17 @@ impl Cube {
         cube
     }
 
-    pub fn scramble(self, n: u32) -> Self {
+    pub fn scramble(self, n: u32) -> (Self, String) {
         let mut cube = self;
-        let moves = "udlrfbu'd'l'r'f'b'";
+        let moves = ["u", "d", "l", "r", "f", "b", "u'", "d'", "l'", "r'", "f'", "b'"];
         let mut rng = rand::rng();
+        let mut scrambled_moves = String::new();
         for _ in 0..n {
-            let move_char = moves.chars().nth(rng.random_range(0..moves.len())).unwrap();
-            cube = cube.apply_move(move_char, false, false);
+            let move_index = rng.random_range(0..moves.len());
+            let mov = moves[move_index];
+            cube = cube.apply_sequence(mov);
+            scrambled_moves.push_str(mov);
         }
-        cube
+        (cube, scrambled_moves)
     }
 }
