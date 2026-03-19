@@ -17,11 +17,11 @@ fn main() {
         while let Ok(_) = io::stdin().read_line(&mut buffer) {
             let line = buffer.trim();
             if line.is_empty() {
-                cube.dump();
+                println!("{}", cube);
             } else {
                 cube = cube.apply_sequence(line);
                 println!("Applied: {}", line);
-                cube.dump();
+                println!("{}", cube);
             }
             buffer.clear();
         }
@@ -30,14 +30,14 @@ fn main() {
         // let cube = cube::Cube::new().apply_sequence("rur'u'r'frru'r'u'rur'f'");
         let (cube, scrambled_moves) = cube::Cube::new().scramble(20);
         println!("Scrambled moves: {}", scrambled_moves);
-        cube.dump();
+        println!("{}", cube);
         let moves_g0 = solver::Solver::solve_g0(cube).join("");
         let cube_g0 = cube.apply_sequence(&moves_g0);
         println!("Moves G0: {}", moves_g0);
-        cube_g0.dump();
+        println!("{}", cube_g0);
         let moves_g1 = solver::Solver::solve_g1(cube_g0).join("");
         let cube_g1 = cube_g0.apply_sequence(&moves_g1);
         println!("Moves G1: {}", moves_g1);
-        cube_g1.dump();
+        println!("{}", cube_g1);
     }
 }

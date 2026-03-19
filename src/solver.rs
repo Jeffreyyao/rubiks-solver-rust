@@ -49,8 +49,9 @@ impl Solver {
             }
             for m in Self::G0_MOVES {
                 let new_cube = current_cube.apply_sequence(m);
-                if !visited.contains(&Self::orientations_to_index(&new_cube.edge_orientations, 2)) {
-                    visited.insert(Self::orientations_to_index(&new_cube.edge_orientations, 2));
+                let new_edge_orientation_index = Self::orientations_to_index(&new_cube.edge_orientations, 2);
+                if !visited.contains(&new_edge_orientation_index) {
+                    visited.insert(new_edge_orientation_index);
                     let mut new_moves = current_moves.clone();
                     new_moves.push(m.to_string());
                     queue.push_back((new_cube, new_moves));
@@ -65,7 +66,7 @@ impl Solver {
         let corner_orientation_index = Self::orientations_to_index(&cube.corner_orientations, 3);
         let mut lr_mid_slice_permutation = [0; 4];
         for i in 0..4 {
-            lr_mid_slice_permutation[i] = cube.edge_permutations[cube::Cube::LR_MID_SLICE_EDGES[i as usize] as usize];
+            lr_mid_slice_permutation[i] = cube.edge_permutations[cube::Cube::G2_SLICE_EDGES[i as usize] as usize];
         }
         let lr_mid_slice_combination_index = Self::combinations_to_index(&lr_mid_slice_permutation);
         lr_mid_slice_combination_index as u64 * (3_u64.pow(7)) + corner_orientation_index as u64
