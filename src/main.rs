@@ -7,7 +7,7 @@ mod profile;
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() != 2 {
-        println!("Usage: {} [sim|debug]", args[0]);
+        println!("Usage: {} [sim|solve-rand|debug]", args[0]);
         return;
     }
     if args[1] == "sim" { // simulate moves in a while loop
@@ -25,7 +25,7 @@ fn main() {
             }
             buffer.clear();
         }
-    } else if args[1] == "debug" {
+    } else if args[1] == "solve-rand" {
         // let cube = cube::Cube::new().apply_sequence("dbfur'l'd");
         // let cube = cube::Cube::new().apply_sequence("rur'u'r'frru'r'u'rur'f'");
         let (cube, scrambled_moves) = cube::Cube::new().scramble(20);
@@ -39,5 +39,12 @@ fn main() {
         let cube_g1 = cube_g0.apply_sequence(&moves_g1);
         println!("Moves G1: {}", moves_g1);
         println!("{}", cube_g1);
+        let moves_g2 = solver::Solver::solve_g2(cube_g1).join("");
+        let cube_g2 = cube_g1.apply_sequence(&moves_g2);
+        println!("Moves G2: {}", moves_g2);
+        println!("{}", cube_g2);
+    } else if args[1] == "debug" {
+        let cube = cube::Cube::new_from_indices([0, 0, 0, 0, 0, 0, 0, 1], [0, 1, 2, 3, 4, 5, 6, 7], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+        println!("{}", solver::Solver::get_g1_index(cube));
     }
 }
