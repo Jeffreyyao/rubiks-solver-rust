@@ -228,9 +228,9 @@ impl Cube {
     fn move_to_char(mov: Mov) -> String {
         let mut s = String::new();
         match mov.face {
-            Face::U => s.push('u'), Face::D => s.push('d'),
-            Face::L => s.push('l'), Face::R => s.push('r'),
-            Face::F => s.push('f'), Face::B => s.push('b'),
+            Face::U => s.push('U'), Face::D => s.push('D'),
+            Face::L => s.push('L'), Face::R => s.push('R'),
+            Face::F => s.push('F'), Face::B => s.push('B'),
         }
         if mov.dir == Dir::CCW {
             s.push('\'');
@@ -314,6 +314,7 @@ impl Cube {
             let dir = index_to_dir(rng.random_range(0..2));
             cube = cube.apply_move(Mov { face, dir });
             scrambled_moves.push_str(&Self::move_to_char(Mov { face, dir }));
+            scrambled_moves.push(' ');
         }
         (cube, scrambled_moves)
     }

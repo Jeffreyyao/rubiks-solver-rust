@@ -21,6 +21,7 @@ impl Solver {
         fn_get_index: fn(cube::Cube) -> u64,
         moves: &[&str],
         name: String,
+        debug: bool,
     ) -> Vec<String> {
         if is_solved(cube) {
             return vec![];
@@ -41,10 +42,23 @@ impl Solver {
                     let mut new_moves = current_moves.clone();
                     new_moves.push(m.to_string());
                     queue.push_back((new_cube, new_moves));
+                    if debug {
+                        println!("new index: {} (move {} from path `{}`)", new_index, m, current_moves.join(" "));
+                    }
+                } else {
+                    if debug {
+                        println!(
+                            "index {} already visited (tried `{}` from path `{}`)",
+                            new_index,
+                            m,
+                            current_moves.join(" ")
+                        );
+                    }
                 }
             }
         }
         p.report("no solution found");
+        println!("visited indices {:?}, size: {}", visited_indices, visited_indices.len());
         return vec![];
     }
 
@@ -71,7 +85,7 @@ impl Solver {
         index
     }
 
-    fn is_solved_g0(cube: cube::Cube) -> bool {
+    fn is_solved_g0(cube: cube::Cube) -> bool { // edge orientations are all 0
         cube.edge_orientations == [0; 12]
     }
 
@@ -80,7 +94,7 @@ impl Solver {
     }
 
     pub fn solve_g0(cube: cube::Cube) -> Vec<String> {
-        Self::solve_bfs(cube, Self::is_solved_g0, Self::get_g0_index, &Self::G0_MOVES, "solve_g0".to_string())
+        Self::solve_bfs(cube, Self::is_solved_g0, Self::get_g0_index, &Self::G0_MOVES, "solve_g0".to_string(), false)
     }
 
     pub fn get_g1_index(cube: cube::Cube) -> u64 {
@@ -93,34 +107,36 @@ impl Solver {
         corner_orientation_index as u64 * 495 + lr_mid_slice_combination_index as u64 // 495: comb(12, 4)
     }
 
-    fn is_solved_g1(cube: cube::Cube) -> bool { // assumes g0 solved
+    fn is_solved_g1(cube: cube::Cube) -> bool { // corner orientations are all 0; LR mid slice combination is [0, 2, 8, 10]
         let g1_index = Self::get_g1_index(cube);
         g1_index == 267 // combination index of [0, 2, 8, 10]
     }
 
     pub fn solve_g1(cube: cube::Cube) -> Vec<String> {
-        return Self::solve_bfs(cube, Self::is_solved_g1, Self::get_g1_index, &Self::G1_MOVES, "solve_g1".to_string());
+        return Self::solve_bfs(cube, Self::is_solved_g1, Self::get_g1_index, &Self::G1_MOVES, "solve_g1".to_string(), false);
     }
 
-    fn get_g2_index(cube: cube::Cube) -> u64 {
+    pub fn get_g2_index(cube: cube::Cube) -> u64 {
         let mut ud_mid_slice_permutation = [0; 4];
         for i in 0..4 {
             ud_mid_slice_permutation[i] = cube.edge_permutations[cube::Cube::G3_SLICE_EDGES[i as usize] as usize];
         }
         let ud_mid_slice_combination_index = Self::combinations_to_index(&ud_mid_slice_permutation);
+        // println!("UD mid slice permutation: {:?}, index: {}", ud_mid_slice_permutation, ud_mid_slice_combination_index);
         let mut tetrad_permutation = [0; 4];
         for i in 0..4 {
             tetrad_permutation[i] = cube.corner_permutations[cube::Cube::G3_TETRAD_CORNERS[i as usize] as usize];
         }
         let tetrad_combination_index = Self::combinations_to_index(&tetrad_permutation);
+        // println!("Tetrad permutation: {:?}, index: {}", tetrad_permutation, tetrad_combination_index);
         return tetrad_combination_index as u64 * comb(8, 4) + ud_mid_slice_combination_index as u64;
     }
 
-    fn is_solved_g2(cube: cube::Cube) -> bool {
+    fn is_solved_g2(cube: cube::Cube) -> bool { // first tetrad is [0, 2, 5, 7]; UD mid slice combination is [4, 5, 6, 7]
         return Self::get_g2_index(cube) == 69 * comb(8, 4) + 46;
     }
 
     pub fn solve_g2(cube: cube::Cube) -> Vec<String> {
-        return Self::solve_bfs(cube, Self::is_solved_g2, Self::get_g2_index, &Self::G2_MOVES, "solve_g2".to_string());
+        return Self::solve_bfs(cube, Self::is_solved_g2, Self::get_g2_index, &Self::G2_MOVES, "solve_g2".to_string(), true);
     }
 }
