@@ -106,15 +106,6 @@ impl Cube {
         }
     }
 
-    pub fn new_from_indices(corner_orientations: CornerOrientations, corner_permutations: CornerPermutations, edge_orientations: EdgeOrientations, edge_permutations: EdgePermutations) -> Self {
-        Self {
-            corner_orientations,
-            corner_permutations,
-            edge_orientations,
-            edge_permutations,
-        }
-    }
-
     pub fn u(self, clockwise: bool) -> Self {
         return Self {
             corner_orientations: _permute(

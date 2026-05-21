@@ -47,7 +47,7 @@ fn main() {
         println!("Moves G2: {}", moves_g2.to_uppercase());
         println!("{}", cube_g2);
     } else if args[1] == "debug" {
-        let cube = cube::Cube::new_from_indices([0, 0, 0, 0, 0, 0, 0, 1], [0, 1, 2, 3, 4, 5, 6, 7], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
-        println!("{}", solver::Solver::get_g1_index(cube));
+        let perm = [0,1,4,2];
+        println!("{}", solver::Solver::permutations_to_index(&perm, 8));
     }
 }
