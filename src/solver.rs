@@ -14,6 +14,13 @@ pub fn comb(n: u64, r: u64) -> u64 {
     FACTORIALS[n as usize] / (FACTORIALS[r as usize] * FACTORIALS[(n - r) as usize])
 }
 
+pub fn perm(n: u64, r: u64) -> u64 {
+    if n < r {
+        return 0;
+    }
+    FACTORIALS[n as usize] / FACTORIALS[(n - r) as usize]
+}
+
 impl Solver {
     pub const G0_MOVES: [&str; 12] = ["u", "u'", "d", "d'", "l", "l'", "r", "r'", "f", "f'", "b", "b'"];
     pub const G1_MOVES: [&str; 10] = ["u2", "d2", "l", "l'", "r", "r'", "f", "f'", "b", "b'"];
@@ -86,26 +93,24 @@ impl Solver {
 
     pub fn permutations_to_index(permutations: &[u8], n: u8) -> u32 { // n: size of all allowed elements
         let k = permutations.len() as u8;
-    let mut index: u32 = 0;
-    let mut used = vec![false; n as usize];
+        let mut index: u32 = 0;
+        let mut used = vec![false; n as usize];
 
-    for i in 0..k as usize {
-        let p = permutations[i];
-        let mut count = 0u32;
-        for j in 0..p {
-            if !used[j as usize] {
-                count += 1;
+        for i in 0..k as usize {
+            let p = permutations[i];
+            let mut count = 0u32;
+            for j in 0..p {
+                if !used[j as usize] {
+                    count += 1;
+                }
             }
-        }
-        let remaining_after_this = n - i as u8 - 1;
+            let remaining_after_this = n - i as u8 - 1;
             let still_to_choose = k - i as u8 - 1;
-
             let multiplier = if still_to_choose == 0 {
                 1
             } else {
-                FACTORIALS[remaining_after_this as usize] / FACTORIALS[(remaining_after_this - still_to_choose) as usize]
+                perm(remaining_after_this as u64, still_to_choose as u64) as u32
             };
-
             index += count * multiplier as u32;
             used[p as usize] = true;
         }
