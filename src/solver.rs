@@ -47,6 +47,9 @@ impl Solver {
                 return current_moves;
             }
             for m in moves {
+                if current_cube.last_move.is_some() && current_cube.last_move.unwrap().face == cube::Cube::char_to_face(m.chars().next().unwrap()).unwrap() {
+                    continue;
+                }
                 let new_cube = current_cube.apply_sequence(m);
                 let new_index = fn_get_index(new_cube);
                 if !visited_indices.contains(&new_index) {

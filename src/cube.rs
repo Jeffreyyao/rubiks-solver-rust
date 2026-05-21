@@ -30,7 +30,7 @@ pub enum Dir {
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Mov {
-    face: Face,
+    pub face: Face,
     dir: Dir,
 }
 
@@ -71,6 +71,7 @@ pub struct Cube {
     pub corner_permutations: CornerPermutations, // 8 corners
     pub edge_orientations: EdgeOrientations,     // 2 orientations per edge
     pub edge_permutations: EdgePermutations,     // 12 edges
+    pub last_move: Option<Mov>,
 }
 
 impl Cube {
@@ -103,10 +104,11 @@ impl Cube {
             corner_permutations: (0..8).collect::<Vec<u8>>().try_into().unwrap(), // 0 to 7
             edge_orientations: [0; 12],  // all edges are oriented 0
             edge_permutations: (0..12).collect::<Vec<u8>>().try_into().unwrap(), // 0 to 11
+            last_move: None,
         }
     }
 
-    pub fn u(self, clockwise: bool) -> Self {
+    pub fn u(self, clockwise: bool, mov: Option<Mov>) -> Self {
         return Self {
             corner_orientations: _permute(
                 _orient_corners(self.corner_orientations, &Self::U_CORNER_INDICES),
@@ -124,10 +126,11 @@ impl Cube {
                 clockwise,
             ),
             edge_permutations: _permute(self.edge_permutations, &Self::U_EDGE_INDICES, clockwise),
+            last_move: mov,
         };
     }
 
-    pub fn d(self, clockwise: bool) -> Self {
+    pub fn d(self, clockwise: bool, mov: Option<Mov>) -> Self {
         return Self {
             corner_orientations: _permute(
                 _orient_corners(self.corner_orientations, &Self::D_CORNER_INDICES),
@@ -145,10 +148,11 @@ impl Cube {
                 clockwise,
             ),
             edge_permutations: _permute(self.edge_permutations, &Self::D_EDGE_INDICES, clockwise),
+            last_move: mov,
         };
     }
 
-    pub fn l(self, clockwise: bool) -> Self {
+    pub fn l(self, clockwise: bool, mov: Option<Mov>) -> Self {
         return Self {
             corner_orientations: _permute(
                 self.corner_orientations,
@@ -162,10 +166,11 @@ impl Cube {
             ),
             edge_orientations: _permute(self.edge_orientations, &Self::L_EDGE_INDICES, clockwise),
             edge_permutations: _permute(self.edge_permutations, &Self::L_EDGE_INDICES, clockwise),
+            last_move: mov,
         };
     }
 
-    pub fn r(self, clockwise: bool) -> Self {
+    pub fn r(self, clockwise: bool, mov: Option<Mov>) -> Self {
         return Self {
             corner_orientations: _permute(
                 self.corner_orientations,
@@ -179,10 +184,11 @@ impl Cube {
             ),
             edge_orientations: _permute(self.edge_orientations, &Self::R_EDGE_INDICES, clockwise),
             edge_permutations: _permute(self.edge_permutations, &Self::R_EDGE_INDICES, clockwise),
+            last_move: mov,
         };
     }
 
-    pub fn f(self, clockwise: bool) -> Self {
+    pub fn f(self, clockwise: bool, mov: Option<Mov>) -> Self {
         return Self {
             corner_orientations: _permute(
                 _orient_corners(self.corner_orientations, &Self::F_CORNER_INDICES),
@@ -196,10 +202,11 @@ impl Cube {
             ),
             edge_orientations: _permute(self.edge_orientations, &Self::F_EDGE_INDICES, clockwise),
             edge_permutations: _permute(self.edge_permutations, &Self::F_EDGE_INDICES, clockwise),
+            last_move: mov,
         };
     }
 
-    pub fn b(self, clockwise: bool) -> Self {
+    pub fn b(self, clockwise: bool, mov: Option<Mov>) -> Self {
         return Self {
             corner_orientations: _permute(
                 _orient_corners(self.corner_orientations, &Self::B_CORNER_INDICES),
@@ -213,6 +220,7 @@ impl Cube {
             ),
             edge_orientations: _permute(self.edge_orientations, &Self::B_EDGE_INDICES, clockwise),
             edge_permutations: _permute(self.edge_permutations, &Self::B_EDGE_INDICES, clockwise),
+            last_move: mov,
         };
     }
 
@@ -231,7 +239,7 @@ impl Cube {
         s
     }
 
-    fn char_to_face(c: char) -> Option<Face> {
+    pub fn char_to_face(c: char) -> Option<Face> {
         match c {
             'u' | 'U' => Some(Face::U), 'd' | 'D' => Some(Face::D),
             'l' | 'L' => Some(Face::L), 'r' | 'R' => Some(Face::R),
@@ -250,9 +258,9 @@ impl Cube {
 
     pub fn apply_move(self, mov: Mov) -> Self {
         let mut c = match mov.face {
-            Face::U => self.u(mov.dir == Dir::CW), Face::D => self.d(mov.dir == Dir::CW),
-            Face::L => self.l(mov.dir == Dir::CW), Face::R => self.r(mov.dir == Dir::CW),
-            Face::F => self.f(mov.dir == Dir::CW), Face::B => self.b(mov.dir == Dir::CW),
+            Face::U => self.u(mov.dir == Dir::CW, Some(mov)), Face::D => self.d(mov.dir == Dir::CW, Some(mov)),
+            Face::L => self.l(mov.dir == Dir::CW, Some(mov)), Face::R => self.r(mov.dir == Dir::CW, Some(mov)),
+            Face::F => self.f(mov.dir == Dir::CW, Some(mov)), Face::B => self.b(mov.dir == Dir::CW, Some(mov)),
         };
         if mov.dir == Dir::HT {
             c = c.apply_move(Mov { face: mov.face, dir: Dir::CCW });
@@ -300,12 +308,18 @@ impl Cube {
         let mut cube = self;
         let mut rng = rand::rng();
         let mut scrambled_moves = String::new();
-        for _ in 0..n {
+        let mut moves_applied_count = 0;
+        while moves_applied_count < n {
             let face = index_to_face(rng.random_range(0..6));
-            let dir = index_to_dir(rng.random_range(0..2));
-            cube = cube.apply_move(Mov { face, dir });
-            scrambled_moves.push_str(&Self::move_to_char(Mov { face, dir }));
+            let dir = index_to_dir(rng.random_range(0..3));
+            let mov = Mov { face, dir };
+            if cube.last_move.is_some() && cube.last_move.unwrap().face == mov.face {
+                continue;
+            }
+            cube = cube.apply_move(mov);
+            scrambled_moves.push_str(&Self::move_to_char(mov));
             scrambled_moves.push(' ');
+            moves_applied_count += 1;
         }
         (cube, scrambled_moves)
     }
