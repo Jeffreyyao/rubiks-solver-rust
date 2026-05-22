@@ -28,7 +28,7 @@ fn main() {
     } else if args[1] == "solve-rand" {
         // let cube = cube::Cube::new().apply_sequence("dbfur'l'd");
         // let cube = cube::Cube::new().apply_sequence("rur'u'r'frru'r'u'rur'f'");
-        let (cube, scrambled_moves) = cube::Cube::new().scramble(20);
+        let (cube, scrambled_moves) = cube::Cube::new().scramble(25);
         println!("Scrambled moves: {}", scrambled_moves);
         println!("{}", cube);
 
@@ -54,6 +54,8 @@ fn main() {
         let cube_g3 = cube_g2.apply_sequence(&moves_g3);
         println!("Moves G3: {}", moves_g3.to_uppercase());
         println!("{}", cube_g3);
+
+        println!("Full solution: {} {} {} {}", moves_g0.to_uppercase(), moves_g1.to_uppercase(), moves_g2.to_uppercase(), moves_g3.to_uppercase());
     } else if args[1] == "debug" {
         let c = cube::Cube::new();
         println!("{}", solver::Solver::get_g2_index(c));
