@@ -36,16 +36,24 @@ fn main() {
         let cube_g0 = cube.apply_sequence(&moves_g0);
         println!("Moves G0: {}", moves_g0.to_uppercase());
         println!("{}", cube_g0);
+        if moves_g0.is_empty() { return; }
 
         let moves_g1 = solver::Solver::solve_g1(cube_g0).join(" ");
         let cube_g1 = cube_g0.apply_sequence(&moves_g1);
         println!("Moves G1: {}", moves_g1.to_uppercase());
         println!("{}", cube_g1);
+        if moves_g1.is_empty() { return; }
 
         let moves_g2 = solver::Solver::solve_g2(cube_g1).join(" ");
         let cube_g2 = cube_g1.apply_sequence(&moves_g2);
         println!("Moves G2: {}", moves_g2.to_uppercase());
         println!("{}", cube_g2);
+        if moves_g2.is_empty() { return; }
+
+        let moves_g3 = solver::Solver::solve_g3(cube_g2).join(" ");
+        let cube_g3 = cube_g2.apply_sequence(&moves_g3);
+        println!("Moves G3: {}", moves_g3.to_uppercase());
+        println!("{}", cube_g3);
     } else if args[1] == "debug" {
         let perm = [0,1,4,2];
         println!("{}", solver::Solver::permutations_to_index(&perm, 8));

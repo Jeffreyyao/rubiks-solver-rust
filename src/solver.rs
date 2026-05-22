@@ -25,7 +25,7 @@ impl Solver {
     pub const G0_MOVES: [&str; 12] = ["u", "u'", "d", "d'", "l", "l'", "r", "r'", "f", "f'", "b", "b'"];
     pub const G1_MOVES: [&str; 10] = ["u2", "d2", "l", "l'", "r", "r'", "f", "f'", "b", "b'"];
     pub const G2_MOVES: [&str; 8] = ["u2", "d2", "l", "l'", "r", "r'", "f2", "b2"];
-    // pub const G3_MOVES: [&str; 6] = ["u2", "d2", "l2", "r2", "f2", "b2"];
+    pub const G3_MOVES: [&str; 6] = ["u2", "d2", "l2", "r2", "f2", "b2"];
 
     fn solve_bfs(
         cube: cube::Cube,
@@ -33,12 +33,12 @@ impl Solver {
         fn_get_index: fn(cube::Cube) -> u64,
         moves: &[&str],
         name: String,
-        debug: bool,
     ) -> Vec<String> {
+        let p = profile::Profile::start(&name);
         if is_solved(cube) {
+            p.report("already solved");
             return vec![];
         }
-        let p = profile::Profile::start(&name);
         let mut queue = VecDeque::from([(cube, vec![])]);
         let mut visited_indices = HashSet::from([fn_get_index(cube)]);
         while let Some((current_cube, current_moves)) = queue.pop_front() {
@@ -48,7 +48,7 @@ impl Solver {
             }
             for m in moves {
                 if current_cube.last_move.is_some() && current_cube.last_move.unwrap().face == cube::Cube::char_to_face(m.chars().next().unwrap()).unwrap() {
-                    continue;
+                    continue; // skip next move of the same face
                 }
                 let new_cube = current_cube.apply_sequence(m);
                 let new_index = fn_get_index(new_cube);
@@ -57,18 +57,6 @@ impl Solver {
                     let mut new_moves = current_moves.clone();
                     new_moves.push(m.to_string());
                     queue.push_back((new_cube, new_moves));
-                    if debug {
-                        println!("new index: {} (move {} from path `{}`)", new_index, m, current_moves.join(" "));
-                    }
-                } else {
-                    if debug {
-                        println!(
-                            "index {} already visited (tried `{}` from path `{}`)",
-                            new_index,
-                            m,
-                            current_moves.join(" ")
-                        );
-                    }
                 }
             }
         }
@@ -97,7 +85,7 @@ impl Solver {
     pub fn permutations_to_index(permutations: &[u8], n: u8) -> u32 { // n: size of all allowed elements
         let k = permutations.len() as u8;
         let mut index: u32 = 0;
-        let mut used = vec![false; n as usize];
+        let mut used = vec![false; 12];
 
         for i in 0..k as usize {
             let p = permutations[i];
@@ -130,14 +118,14 @@ impl Solver {
     }
 
     pub fn solve_g0(cube: cube::Cube) -> Vec<String> {
-        Self::solve_bfs(cube, Self::is_solved_g0, Self::get_g0_index, &Self::G0_MOVES, "solve_g0".to_string(), false)
+        Self::solve_bfs(cube, Self::is_solved_g0, Self::get_g0_index, &Self::G0_MOVES, "solve_g0".to_string())
     }
 
     pub fn get_g1_index(cube: cube::Cube) -> u64 {
         let corner_orientation_index = Self::orientations_to_index(&cube.corner_orientations, 3);
         let mut lr_mid_slice_permutation = [0; 4];
         for i in 0..4 {
-            lr_mid_slice_permutation[i] = cube.edge_permutations[cube::Cube::G2_SLICE_EDGES[i as usize] as usize];
+            lr_mid_slice_permutation[i] = cube.edge_permutations[cube::Cube::LR_MID_SLICE_EDGES[i as usize] as usize];
         }
         let lr_mid_slice_combination_index = Self::combinations_to_index(&lr_mid_slice_permutation);
         corner_orientation_index as u64 * 495 + lr_mid_slice_combination_index as u64 // 495: comb(12, 4)
@@ -149,38 +137,80 @@ impl Solver {
     }
 
     pub fn solve_g1(cube: cube::Cube) -> Vec<String> {
-        return Self::solve_bfs(cube, Self::is_solved_g1, Self::get_g1_index, &Self::G1_MOVES, "solve_g1".to_string(), false);
+        return Self::solve_bfs(cube, Self::is_solved_g1, Self::get_g1_index, &Self::G1_MOVES, "solve_g1".to_string());
+    }
+
+    // helper function to get the combination index of a cube given on positions of 4
+    fn get_cube_combination_index_at_position(cube: cube::Cube, position: [u8; 4], position_type: char) -> u64 {
+        let mut permutation = [0; 4];
+        if position_type == 'c' {
+            for i in 0..4 {
+                permutation[i] = cube.corner_permutations[position[i] as usize];
+            }
+        } else if position_type == 'e' {
+            for i in 0..4 {
+                permutation[i] = cube.edge_permutations[position[i] as usize];
+            }
+        } else {
+            return 0;
+        }
+        Self::combinations_to_index(&permutation) as u64
+    }
+
+    // helper function to get the permutation index of a cube given on positions of 4
+    fn get_cube_permutation_index_at_position(cube: cube::Cube, position: [u8; 4], position_type: char) -> u64 {
+        let mut permutation = [0; 4];
+        if position_type == 'c' {
+            for i in 0..4 {
+                permutation[i] = cube.corner_permutations[position[i] as usize];
+            }
+        } else if position_type == 'e' {
+            for i in 0..4 {
+                permutation[i] = cube.edge_permutations[position[i] as usize];
+            }
+        } else {
+            return 0;
+        }
+        Self::permutations_to_index(&permutation, 8) as u64
     }
 
     pub fn get_g2_index(cube: cube::Cube) -> u64 {
-        let mut ud_mid_slice_permutation = [0; 4];
-        for i in 0..4 {
-            ud_mid_slice_permutation[i] = cube.edge_permutations[cube::Cube::G3_SLICE_EDGES[i as usize] as usize];
-        }
-        let ud_mid_slice_combination_index = Self::combinations_to_index(&ud_mid_slice_permutation);
-        let mut tetrad_permutation = [0; 4];
-        for i in 0..4 {
-            tetrad_permutation[i] = cube.corner_permutations[cube::Cube::G3_TETRAD_CORNERS[i as usize] as usize];
-        }
-        let tetrad_permutation_index = Self::permutations_to_index(&tetrad_permutation, 8);
+        let ud_mid_slice_combination_index = Self::get_cube_combination_index_at_position(cube, cube::Cube::UD_MID_SLICE_EDGES, 'e');
+        let tetrad_permutation_index = Self::get_cube_permutation_index_at_position(cube, cube::Cube::TETRAD_1_CORNERS, 'c');
         return tetrad_permutation_index as u64 * comb(8, 4) + ud_mid_slice_combination_index as u64;
     }
 
     fn is_solved_g2(cube: cube::Cube) -> bool { // first tetrad is [0, 2, 5, 7]; UD mid slice combination is [4, 5, 6, 7]
-        let mut ud_mid_slice_permutation = [0; 4];
-        for i in 0..4 {
-            ud_mid_slice_permutation[i] = cube.edge_permutations[cube::Cube::G3_SLICE_EDGES[i as usize] as usize];
-        }
-        let ud_mid_slice_combination_index = Self::combinations_to_index(&ud_mid_slice_permutation);
-        let mut tetrad_permutation = [0; 4];
-        for i in 0..4 {
-            tetrad_permutation[i] = cube.corner_permutations[cube::Cube::G3_TETRAD_CORNERS[i as usize] as usize];
-        }
-        let tetrad_combination_index = Self::combinations_to_index(&tetrad_permutation);
+        let ud_mid_slice_combination_index = Self::get_cube_combination_index_at_position(cube, cube::Cube::UD_MID_SLICE_EDGES, 'e');
+        let tetrad_combination_index = Self::get_cube_combination_index_at_position(cube, cube::Cube::TETRAD_1_CORNERS, 'c');
         return ud_mid_slice_combination_index == 69 && tetrad_combination_index == 46;
     }
 
     pub fn solve_g2(cube: cube::Cube) -> Vec<String> {
-        return Self::solve_bfs(cube, Self::is_solved_g2, Self::get_g2_index, &Self::G2_MOVES, "solve_g2".to_string(), false);
+        return Self::solve_bfs(cube, Self::is_solved_g2, Self::get_g2_index, &Self::G2_MOVES, "solve_g2".to_string());
+    }
+
+    pub fn get_g3_index(cube: cube::Cube) -> u64 {
+        let e1_index = Self::get_cube_permutation_index_at_position(cube, cube::Cube::LR_MID_SLICE_EDGES, 'e');
+        let e2_index = Self::get_cube_permutation_index_at_position(cube, cube::Cube::UD_MID_SLICE_EDGES, 'e');
+        let e3_index = Self::get_cube_permutation_index_at_position(cube, cube::Cube::FB_MID_SLICE_EDGES, 'e');
+        let c1_index = Self::get_cube_permutation_index_at_position(cube, cube::Cube::TETRAD_1_CORNERS, 'c');
+        let c2_index = Self::get_cube_permutation_index_at_position(cube, cube::Cube::TETRAD_2_CORNERS, 'c');
+        let perm_size = perm(4,4);
+        return e1_index + perm_size*(e2_index + perm_size*(e3_index + perm_size*(c1_index + perm_size*c2_index)));
+    }
+
+    fn is_solved_g3(cube: cube::Cube) -> bool {
+        for i in 0..8 {
+            if cube.corner_orientations[i] != i as u8 { return false }
+        }
+        for i in 0..12 {
+            if cube.edge_orientations[i] != i as u8 { return false }
+        }
+        true
+    }
+
+    pub fn solve_g3(cube: cube::Cube) -> Vec<String> {
+        return Self::solve_bfs(cube, Self::is_solved_g3, Self::get_g3_index, &Self::G3_MOVES, "solve_g3".to_string());
     }
 }

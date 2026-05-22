@@ -94,16 +94,18 @@ impl Cube {
     const B_CORNER_INDICES: [u8; 4] = [3, 2, 6, 7];
     const B_EDGE_INDICES: [u8; 4] = [2, 6, 10, 7];
 
-    pub const G2_SLICE_EDGES: [u8; 4] = [0, 2, 8, 10];
-    pub const G3_TETRAD_CORNERS: [u8; 4] = [0, 2, 5, 7];
-    pub const G3_SLICE_EDGES: [u8; 4] = [4, 5, 6, 7];
+    pub const LR_MID_SLICE_EDGES: [u8; 4] = [0, 2, 8, 10];
+    pub const UD_MID_SLICE_EDGES: [u8; 4] = [4, 5, 6, 7];
+    pub const FB_MID_SLICE_EDGES: [u8; 4] = [1, 3, 9, 11];
+    pub const TETRAD_1_CORNERS: [u8; 4] = [0, 2, 5, 7];
+    pub const TETRAD_2_CORNERS: [u8; 4] = [1, 3, 4, 6];
 
     pub fn new() -> Self {
         Self {
             corner_orientations: [0; 8], // all corners are oriented 0
             corner_permutations: (0..8).collect::<Vec<u8>>().try_into().unwrap(), // 0 to 7
             edge_orientations: [0; 12],  // all edges are oriented 0
-            edge_permutations: (0..12).collect::<Vec<u8>>().try_into().unwrap(), // 0 to 11
+            edge_permutations: (0..12).collect::<Vec<u8>>().try_into().unwrap(),  // 0 to 11
             last_move: None,
         }
     }
