@@ -55,7 +55,9 @@ fn main() {
         println!("Moves G3: {}", moves_g3.to_uppercase());
         println!("{}", cube_g3);
     } else if args[1] == "debug" {
-        let perm = [0,1,4,2];
-        println!("{}", solver::Solver::permutations_to_index(&perm, 8));
+        let c = cube::Cube::new();
+        println!("{}", solver::Solver::get_g2_index(c));
+        let c1 = c.apply_sequence("u");
+        println!("{}", solver::Solver::get_g2_index(c1));
     }
 }
