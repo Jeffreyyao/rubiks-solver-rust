@@ -58,8 +58,6 @@ fn main() {
         println!("Full solution: {} {} {} {}", moves_g0.to_uppercase(), moves_g1.to_uppercase(), moves_g2.to_uppercase(), moves_g3.to_uppercase());
     } else if args[1] == "debug" {
         let c = cube::Cube::new();
-        println!("{}", solver::Solver::get_g2_index(c));
-        let c1 = c.apply_sequence("u");
-        println!("{}", solver::Solver::get_g2_index(c1));
+        println!("{}", solver::Solver::get_g1_index(c));
     }
 }

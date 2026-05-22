@@ -109,20 +109,20 @@ impl Solver {
         index
     }
 
-    // helper function to get the combination index of a cube given on positions of 4
-    fn get_cube_combination_index_at_position<const N: usize>(combinations: &[u8], position: &[u8; N]) -> u64 {
+    // helper function to get the combination index on given positions in permutation
+    fn get_cube_combination_index_at_position<const N: usize>(permutations: &[u8], positions: &[u8; N]) -> u64 {
         let mut comb = [0u8; N];
         for i in 0..N {
-            comb[i] = combinations[position[i] as usize];
+            comb[i] = permutations[positions[i] as usize];
         }
         Self::combinations_to_index(&comb) as u64
     }
 
-    // helper function to get the permutation index of a cube given on positions of 4
-    fn get_cube_permutation_index_at_position(permutations: &[u8], position: [u8; 4]) -> u64 {
+    // helper function to get the permutation index on given positions in permutation
+    fn get_cube_permutation_index_at_position(permutations: &[u8], positions: [u8; 4]) -> u64 {
         let mut perm = [0; 4];
         for i in 0..4 {
-            perm[i] = permutations[position[i] as usize];
+            perm[i] = permutations[positions[i] as usize];
         }
         Self::permutations_to_index(&perm, 8) as u64
     }
@@ -141,12 +141,8 @@ impl Solver {
 
     pub fn get_g1_index(cube: cube::Cube) -> u64 {
         let corner_orientation_index = Self::orientations_to_index(&cube.corner_orientations, 3);
-        let mut lr_mid_slice_permutation = [0; 4];
-        for i in 0..4 {
-            lr_mid_slice_permutation[i] = cube.edge_permutations[cube::Cube::LR_MID_SLICE_EDGES[i as usize] as usize];
-        }
-        let lr_mid_slice_combination_index = Self::combinations_to_index(&lr_mid_slice_permutation);
-        corner_orientation_index as u64 * 495 + lr_mid_slice_combination_index as u64 // 495: comb(12, 4)
+        let lr_mid_slice_combination_index = Self::get_cube_combination_index_at_position(&cube.edge_permutations, &cube::Cube::LR_MID_SLICE_EDGES);
+        corner_orientation_index as u64 * 495 + lr_mid_slice_combination_index // 495: comb(12, 4)
     }
 
     fn is_solved_g1(cube: cube::Cube) -> bool { // corner orientations are all 0; LR mid slice combination is [0, 2, 8, 10]
