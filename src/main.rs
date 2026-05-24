@@ -26,36 +26,37 @@ fn main() {
             buffer.clear();
         }
     } else if args[1] == "solve-rand" {
-        // let cube = cube::Cube::new().apply_sequence("dbfur'l'd");
-        // let cube = cube::Cube::new().apply_sequence("rur'u'r'frru'r'u'rur'f'");
+        let p = profile::Profile::start("solve-rand");
         let (cube, scrambled_moves) = cube::Cube::new().scramble(25);
-        println!("Scrambled moves: {}", scrambled_moves);
+        println!("Scrambled moves: {}", scrambled_moves.to_string());
         println!("{}", cube);
 
-        let moves_g0 = solver::Solver::solve_g0(cube).join(" ");
-        let cube_g0 = cube.apply_sequence(&moves_g0);
-        println!("Moves G0: {}", moves_g0.to_uppercase());
+        let (g0_success, moves_g0) = solver::Solver::solve_g0(cube);
+        let cube_g0 = cube.apply_moves(&moves_g0.0);
+        println!("Moves G0: {}", moves_g0.to_string());
         println!("{}", cube_g0);
-        if moves_g0.is_empty() { return; }
+        if !g0_success { return; }
 
-        let moves_g1 = solver::Solver::solve_g1(cube_g0).join(" ");
-        let cube_g1 = cube_g0.apply_sequence(&moves_g1);
-        println!("Moves G1: {}", moves_g1.to_uppercase());
+        let (g1_success, moves_g1) = solver::Solver::solve_g1(cube_g0);
+        let cube_g1 = cube_g0.apply_moves(&moves_g1.0);
+        println!("Moves G1: {}", moves_g1.to_string());
         println!("{}", cube_g1);
-        if moves_g1.is_empty() { return; }
+        if !g1_success { return; }
 
-        let moves_g2 = solver::Solver::solve_g2(cube_g1).join(" ");
-        let cube_g2 = cube_g1.apply_sequence(&moves_g2);
-        println!("Moves G2: {}", moves_g2.to_uppercase());
+        let (g2_success, moves_g2) = solver::Solver::solve_g2(cube_g1);
+        let cube_g2 = cube_g1.apply_moves(&moves_g2.0);
+        println!("Moves G2: {}", moves_g2.to_string());
         println!("{}", cube_g2);
-        if moves_g2.is_empty() { return; }
+        if !g2_success { return; }
 
-        let moves_g3 = solver::Solver::solve_g3(cube_g2).join(" ");
-        let cube_g3 = cube_g2.apply_sequence(&moves_g3);
-        println!("Moves G3: {}", moves_g3.to_uppercase());
+        let (g3_success, moves_g3) = solver::Solver::solve_g3(cube_g2);
+        let cube_g3 = cube_g2.apply_moves(&moves_g3.0);
+        println!("Moves G3: {}", moves_g3.to_string());
         println!("{}", cube_g3);
+        if !g3_success { return; }
 
-        println!("Full solution: {} {} {} {}", moves_g0.to_uppercase(), moves_g1.to_uppercase(), moves_g2.to_uppercase(), moves_g3.to_uppercase());
+        p.end();
+        println!("Full solution: {} {} {} {}", moves_g0.to_string(), moves_g1.to_string(), moves_g2.to_string(), moves_g3.to_string());
     } else if args[1] == "debug" {
         let c = cube::Cube::new();
         println!("{}", solver::Solver::get_g1_index(c));

@@ -1,5 +1,6 @@
 use rand::{RngExt};
 use std::fmt;
+use std::vec::Vec;
 
 // corners
 // 0  URF    1  UFL
@@ -31,7 +32,48 @@ pub enum Dir {
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Mov {
     pub face: Face,
-    dir: Dir,
+    pub dir: Dir,
+}
+
+impl Mov {
+    pub fn to_string(&self) -> String {
+        let mut s = String::new();
+        s.push_str(&format!("{:?}", self.face));
+        match self.dir {
+            Dir::CW => s.push_str(""),
+            Dir::CCW => s.push_str("'"),
+            Dir::HT => s.push_str("2"),
+        }
+        s
+    }
+}
+
+pub const U: Mov = Mov { face: Face::U, dir: Dir::CW };
+pub const UP: Mov = Mov { face: Face::U, dir: Dir::CCW };
+pub const U2: Mov = Mov { face: Face::U, dir: Dir::HT };
+pub const D: Mov = Mov { face: Face::D, dir: Dir::CW };
+pub const DP: Mov = Mov { face: Face::D, dir: Dir::CCW };
+pub const D2: Mov = Mov { face: Face::D, dir: Dir::HT };
+pub const L: Mov = Mov { face: Face::L, dir: Dir::CW };
+pub const LP: Mov = Mov { face: Face::L, dir: Dir::CCW };
+pub const L2: Mov = Mov { face: Face::L, dir: Dir::HT };
+pub const R: Mov = Mov { face: Face::R, dir: Dir::CW };
+pub const RP: Mov = Mov { face: Face::R, dir: Dir::CCW };
+pub const R2: Mov = Mov { face: Face::R, dir: Dir::HT };
+pub const F: Mov = Mov { face: Face::F, dir: Dir::CW };
+pub const FP: Mov = Mov { face: Face::F, dir: Dir::CCW };
+pub const F2: Mov = Mov { face: Face::F, dir: Dir::HT };
+pub const B: Mov = Mov { face: Face::B, dir: Dir::CW };
+pub const BP: Mov = Mov { face: Face::B, dir: Dir::CCW };
+pub const B2: Mov = Mov { face: Face::B, dir: Dir::HT };
+
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+pub struct Moves(pub Vec<Mov>);
+
+impl Moves {
+    pub fn to_string(&self) -> String {
+        self.0.iter().map(|m| m.to_string()).collect::<Vec<String>>().join(" ")
+    }
 }
 
 fn _permute<const N: usize>(permutation: [u8; N], indices: &[u8; 4], clockwise: bool) -> [u8; N] {
@@ -229,21 +271,6 @@ impl Cube {
         };
     }
 
-    fn move_to_char(mov: Mov) -> String {
-        let mut s = String::new();
-        match mov.face {
-            Face::U => s.push('U'), Face::D => s.push('D'),
-            Face::L => s.push('L'), Face::R => s.push('R'),
-            Face::F => s.push('F'), Face::B => s.push('B'),
-        }
-        if mov.dir == Dir::CCW {
-            s.push('\'');
-        } else if mov.dir == Dir::HT {
-            s.push('2');
-        }
-        s
-    }
-
     pub fn char_to_face(c: char) -> Option<Face> {
         match c {
             'u' | 'U' => Some(Face::U), 'd' | 'D' => Some(Face::D),
@@ -290,7 +317,15 @@ impl Cube {
         cube
     }
 
-    pub fn scramble(self, n: u32) -> (Self, String) {
+    pub fn apply_moves(self, moves: &[Mov]) -> Self {
+        let mut cube = self;
+        for mov in moves {
+            cube = cube.apply_move(*mov);
+        }
+        cube
+    }
+
+    pub fn scramble(self, n: u32) -> (Self, Moves) {
         fn index_to_face(index: u8) -> Face {
             match index {
                 0 => Face::U,
@@ -312,7 +347,7 @@ impl Cube {
         }
         let mut cube = self;
         let mut rng = rand::rng();
-        let mut scrambled_moves = String::new();
+        let mut scrambled_moves = Moves(vec![]);
         let mut moves_applied_count = 0;
         while moves_applied_count < n {
             let face = index_to_face(rng.random_range(0..6));
@@ -322,8 +357,7 @@ impl Cube {
                 continue;
             }
             cube = cube.apply_move(mov);
-            scrambled_moves.push_str(&Self::move_to_char(mov));
-            scrambled_moves.push(' ');
+            scrambled_moves.0.push(mov);
             moves_applied_count += 1;
         }
         (cube, scrambled_moves)

@@ -1,6 +1,6 @@
 use std::collections::{HashSet, VecDeque};
 
-use crate::cube;
+use crate::cube::{self, U, UP, U2, D, DP, D2, L, LP, L2, R, RP, R2, F, FP, F2, B, BP, B2};
 use crate::profile;
 
 pub struct Solver;
@@ -22,46 +22,46 @@ pub fn perm(n: u64, r: u64) -> u64 {
 }
 
 impl Solver {
-    pub const G0_MOVES: [&str; 12] = ["u", "u'", "d", "d'", "l", "l'", "r", "r'", "f", "f'", "b", "b'"];
-    pub const G1_MOVES: [&str; 10] = ["u2", "d2", "l", "l'", "r", "r'", "f", "f'", "b", "b'"];
-    pub const G2_MOVES: [&str; 8] = ["u2", "d2", "l", "l'", "r", "r'", "f2", "b2"];
-    pub const G3_MOVES: [&str; 6] = ["u2", "d2", "l2", "r2", "f2", "b2"];
+    pub const G0_MOVES: [cube::Mov; 12] = [U, UP, D, DP, L, LP, R, RP, F, FP, B, BP];
+    pub const G1_MOVES: [cube::Mov; 10] = [U2, D2, L, LP, R, RP, F, FP, B, BP];
+    pub const G2_MOVES: [cube::Mov; 8] = [U2, D2, L, LP, R, RP, F2, B2];
+    pub const G3_MOVES: [cube::Mov; 6] = [U2, D2, L2, R2, F2, B2];
 
     fn solve_bfs(
         cube: cube::Cube,
         is_solved: fn(cube::Cube) -> bool,
         fn_get_index: fn(cube::Cube) -> u64,
-        moves: &[&str],
+        moves: &[cube::Mov],
         name: String,
-    ) -> Vec<String> {
+    ) -> (bool, cube::Moves) {
         let p = profile::Profile::start(&name);
         if is_solved(cube) {
             p.report("already solved");
-            return vec![];
+            return (true, cube::Moves(vec![]));
         }
-        let mut queue = VecDeque::from([(cube, vec![])]);
+        let mut queue = VecDeque::from([(cube, cube::Moves(vec![]))]);
         let mut visited_indices = HashSet::from([fn_get_index(cube)]);
         while let Some((current_cube, current_moves)) = queue.pop_front() {
             if is_solved(current_cube) {
                 p.end();
-                return current_moves;
+                return (true, current_moves);
             }
             for m in moves {
-                if current_cube.last_move.is_some() && current_cube.last_move.unwrap().face == cube::Cube::char_to_face(m.chars().next().unwrap()).unwrap() {
+                if current_cube.last_move.is_some() && current_cube.last_move.unwrap().face == m.face {
                     continue; // skip next move of the same face
                 }
-                let new_cube = current_cube.apply_sequence(m);
+                let new_cube = current_cube.apply_move(*m);
                 let new_index = fn_get_index(new_cube);
                 if !visited_indices.contains(&new_index) {
                     visited_indices.insert(new_index);
                     let mut new_moves = current_moves.clone();
-                    new_moves.push(m.to_string());
+                    new_moves.0.push(*m);
                     queue.push_back((new_cube, new_moves));
                 }
             }
         }
         p.report("no solution found");
-        return vec![];
+        return (false, cube::Moves(vec![]));
     }
 
     pub fn orientations_to_index(orientations: &[u8], modulus: u8) -> u32 {
@@ -135,7 +135,7 @@ impl Solver {
         Self::orientations_to_index(&cube.edge_orientations, 2) as u64
     }
 
-    pub fn solve_g0(cube: cube::Cube) -> Vec<String> {
+    pub fn solve_g0(cube: cube::Cube) -> (bool, cube::Moves) {
         Self::solve_bfs(cube, Self::is_solved_g0, Self::get_g0_index, &Self::G0_MOVES, "solve_g0".to_string())
     }
 
@@ -150,8 +150,8 @@ impl Solver {
         g1_index == 267 // combination index of [0, 2, 8, 10]
     }
 
-    pub fn solve_g1(cube: cube::Cube) -> Vec<String> {
-        return Self::solve_bfs(cube, Self::is_solved_g1, Self::get_g1_index, &Self::G1_MOVES, "solve_g1".to_string());
+    pub fn solve_g1(cube: cube::Cube) -> (bool, cube::Moves) {
+        Self::solve_bfs(cube, Self::is_solved_g1, Self::get_g1_index, &Self::G1_MOVES, "solve_g1".to_string())
     }
 
     pub fn get_g2_index(cube: cube::Cube) -> u64 {
@@ -167,8 +167,8 @@ impl Solver {
         Self::get_g2_index(cube) == 1518553
     }
 
-    pub fn solve_g2(cube: cube::Cube) -> Vec<String> {
-        return Self::solve_bfs(cube, Self::is_solved_g2, Self::get_g2_index, &Self::G2_MOVES, "solve_g2".to_string());
+    pub fn solve_g2(cube: cube::Cube) -> (bool, cube::Moves) {
+        Self::solve_bfs(cube, Self::is_solved_g2, Self::get_g2_index, &Self::G2_MOVES, "solve_g2".to_string())
     }
 
     pub fn get_g3_index(cube: cube::Cube) -> u64 {
@@ -191,7 +191,7 @@ impl Solver {
         true
     }
 
-    pub fn solve_g3(cube: cube::Cube) -> Vec<String> {
-        return Self::solve_bfs(cube, Self::is_solved_g3, Self::get_g3_index, &Self::G3_MOVES, "solve_g3".to_string());
+    pub fn solve_g3(cube: cube::Cube) -> (bool, cube::Moves) {
+        Self::solve_bfs(cube, Self::is_solved_g3, Self::get_g3_index, &Self::G3_MOVES, "solve_g3".to_string())
     }
 }
