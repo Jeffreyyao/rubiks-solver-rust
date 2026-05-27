@@ -113,7 +113,7 @@ pub struct Cube {
     pub corner_permutations: CornerPermutations, // 8 corners
     pub edge_orientations: EdgeOrientations,     // 2 orientations per edge
     pub edge_permutations: EdgePermutations,     // 12 edges
-    pub last_move: Option<Mov>,
+    pub prev_move: Option<Mov>,
 }
 
 impl Cube {
@@ -151,7 +151,7 @@ impl Cube {
             corner_permutations: (0..8).collect::<Vec<u8>>().try_into().unwrap(), // 0 to 7
             edge_orientations: [0; 12],  // all edges are oriented 0
             edge_permutations: (0..12).collect::<Vec<u8>>().try_into().unwrap(),  // 0 to 11
-            last_move: None,
+            prev_move: None,
         }
     }
 
@@ -173,7 +173,7 @@ impl Cube {
                 clockwise,
             ),
             edge_permutations: _permute(self.edge_permutations, &Self::U_EDGE_INDICES, clockwise),
-            last_move: mov,
+            prev_move: mov,
         };
     }
 
@@ -195,7 +195,7 @@ impl Cube {
                 clockwise,
             ),
             edge_permutations: _permute(self.edge_permutations, &Self::D_EDGE_INDICES, clockwise),
-            last_move: mov,
+            prev_move: mov,
         };
     }
 
@@ -213,7 +213,7 @@ impl Cube {
             ),
             edge_orientations: _permute(self.edge_orientations, &Self::L_EDGE_INDICES, clockwise),
             edge_permutations: _permute(self.edge_permutations, &Self::L_EDGE_INDICES, clockwise),
-            last_move: mov,
+            prev_move: mov,
         };
     }
 
@@ -231,7 +231,7 @@ impl Cube {
             ),
             edge_orientations: _permute(self.edge_orientations, &Self::R_EDGE_INDICES, clockwise),
             edge_permutations: _permute(self.edge_permutations, &Self::R_EDGE_INDICES, clockwise),
-            last_move: mov,
+            prev_move: mov,
         };
     }
 
@@ -249,7 +249,7 @@ impl Cube {
             ),
             edge_orientations: _permute(self.edge_orientations, &Self::F_EDGE_INDICES, clockwise),
             edge_permutations: _permute(self.edge_permutations, &Self::F_EDGE_INDICES, clockwise),
-            last_move: mov,
+            prev_move: mov,
         };
     }
 
@@ -267,7 +267,7 @@ impl Cube {
             ),
             edge_orientations: _permute(self.edge_orientations, &Self::B_EDGE_INDICES, clockwise),
             edge_permutations: _permute(self.edge_permutations, &Self::B_EDGE_INDICES, clockwise),
-            last_move: mov,
+            prev_move: mov,
         };
     }
 
@@ -353,7 +353,7 @@ impl Cube {
             let face = index_to_face(rng.random_range(0..6));
             let dir = index_to_dir(rng.random_range(0..3));
             let mov = Mov { face, dir };
-            if cube.last_move.is_some() && cube.last_move.unwrap().face == mov.face {
+            if cube.prev_move.is_some() && cube.prev_move.unwrap().face == mov.face {
                 continue;
             }
             cube = cube.apply_move(mov);
