@@ -74,6 +74,14 @@ impl Moves {
     pub fn to_string(&self) -> String {
         self.0.iter().map(|m| m.to_string()).collect::<Vec<String>>().join(" ")
     }
+
+    pub fn push(&mut self, mov: Mov) {
+        self.0.push(mov);
+    }
+
+    pub fn extend(&mut self, moves: Moves) {
+        self.0.extend(moves.0);
+    }
 }
 
 fn _permute<const N: usize>(permutation: [u8; N], indices: &[u8; 4], clockwise: bool) -> [u8; N] {
@@ -113,7 +121,7 @@ pub struct Cube {
     pub corner_permutations: CornerPermutations, // 8 corners
     pub edge_orientations: EdgeOrientations,     // 2 orientations per edge
     pub edge_permutations: EdgePermutations,     // 12 edges
-    pub prev_move: Option<Mov>,
+    pub prev_move: Option<Mov>,                  // used to avoid repeating the same face move in bfs
 }
 
 impl Cube {
@@ -311,16 +319,16 @@ impl Cube {
                         dir = d;
                     }
                 }
-                cube = cube.apply_move(Mov { face, dir });
+                cube = cube.apply_move(Mov{face, dir});
             }
         }
         cube
     }
 
-    pub fn apply_moves(self, moves: &[Mov]) -> Self {
+    pub fn apply_moves(self, moves: Moves) -> Self {
         let mut cube = self;
-        for mov in moves {
-            cube = cube.apply_move(*mov);
+        for mov in moves.0 {
+            cube = cube.apply_move(mov);
         }
         cube
     }
