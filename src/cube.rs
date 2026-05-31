@@ -146,12 +146,9 @@ impl Cube {
 
     pub const LR_MID_SLICE_EDGES: [u8; 4] = [0, 2, 8, 10];
     pub const UD_MID_SLICE_EDGES: [u8; 4] = [4, 5, 6, 7];
-    pub const FB_MID_SLICE_EDGES: [u8; 4] = [1, 3, 9, 11];
     pub const HALF_TETRAD_1_CORNERS: [u8; 2] = [0, 2];
     pub const HALF_TETRAD_2_CORNERS: [u8; 2] = [5, 7];
     pub const HALF_TETRAD_3_CORNERS: [u8; 2] = [1, 3];
-    pub const TETRAD_1_CORNERS: [u8; 4] = [0, 2, 5, 7];
-    pub const TETRAD_2_CORNERS: [u8; 4] = [1, 3, 4, 6];
 
     pub fn new() -> Self {
         Self {

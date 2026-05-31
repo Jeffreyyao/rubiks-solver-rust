@@ -36,7 +36,6 @@ fn main() {
             solver::Solver::solve(cube, "solve-rand".to_string(), true);
         }
         "solve-fixed" => {
-            // let moves = cube::Moves(vec![R, U, RP, UP, RP, F, R2, UP, RP, UP, R, U, RP, FP]);
             let moves = cube::Moves(vec![L2, U, F2, DP, F, U, F, D2, BP, F2, RP, BP, U2, RP, D2, R, L, DP, U, D, L2, DP, UP, B2, F]);
             let cube = cube::Cube::new().apply_moves(moves.clone());
             println!("Fixed moves: {}", moves.to_string());
@@ -44,7 +43,7 @@ fn main() {
             solver::Solver::solve(cube, "solve-fixed".to_string(), true);
         }
         "debug" => {
-            println!("{}", solver::Solver::get_cubies_position_index(&[3, 6, 0, 1, 4, 10, 11, 7, 2, 5, 8, 9], &[0, 2, 8, 10], solver::IndexType::Combination));
+            println!("{}", solver::Solver::get_cubies_position_index(&[3, 6, 0, 1, 4, 10, 11, 7, 2, 5, 8, 9], &[0, 2, 8, 10]));
         }
         _ => {
             println!("Usage: {} [sim|solve-rand|solve-fixed|debug]", args[0]);

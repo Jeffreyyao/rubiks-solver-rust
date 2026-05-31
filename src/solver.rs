@@ -14,19 +14,6 @@ pub fn comb(n: u64, r: u64) -> u64 {
     FACTORIALS[n as usize] / (FACTORIALS[r as usize] * FACTORIALS[(n - r) as usize])
 }
 
-pub fn perm(n: u64, r: u64) -> u64 {
-    if n < r {
-        return 0;
-    }
-    FACTORIALS[n as usize] / FACTORIALS[(n - r) as usize]
-}
-
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-pub enum IndexType {
-    Combination,
-    Permutation,
-}
-
 impl Solver {
     pub const G0_MOVES: [cube::Mov; 12] = [U, UP, D, DP, L, LP, R, RP, F, FP, B, BP];
     pub const G1_MOVES: [cube::Mov; 10] = [U2, D2, L, LP, R, RP, F, FP, B, BP];
@@ -66,7 +53,7 @@ impl Solver {
                 }
             }
         }
-        p.report("no solution found");
+        p.report(&format!("no solution found, visited states len: {}", visited_indices.len()));
         return (false, cube::Moves(vec![]));
     }
 
@@ -88,35 +75,23 @@ impl Solver {
         index
     }
 
-    pub fn permutations_to_index(permutations: &[u8], n: u8) -> u32 { // n: size of all allowed elements
-        let k = permutations.len() as u8;
-        let mut index: u32 = 0;
-        let mut used = vec![false; 12];
-
-        for i in 0..k as usize {
-            let p = permutations[i];
-            let mut count = 0u32;
-            for j in 0..p {
-                if !used[j as usize] {
+    pub fn permutations_to_index(permutations: &[u8]) -> u64 { // n: size of all allowed elements
+        let mut index = 0;
+        let n = permutations.len();
+        for i in 0..n {
+            let mut count = 0;
+            for j in i+1..n {
+                if permutations[j] < permutations[i] {
                     count += 1;
                 }
             }
-            let remaining_after_this = n - i as u8 - 1;
-            let still_to_choose = k - i as u8 - 1;
-            let multiplier = if still_to_choose == 0 {
-                1
-            } else {
-                perm(remaining_after_this as u64, still_to_choose as u64) as u32
-            };
-            index += count * multiplier as u32;
-            used[p as usize] = true;
+            index += count * FACTORIALS[(n - i - 1) as usize];
         }
-
         index
     }
 
     // helper function to get the combination index of cubie positions in permutation
-    pub fn get_cubies_position_index<const N: usize>(permutations: &[u8], cubies: &[u8; N], index_type: IndexType) -> u64 {
+    pub fn get_cubies_position_index<const N: usize>(permutations: &[u8], cubies: &[u8; N]) -> u64 {
         let mut perm = [0u8; N];
         let mut i = 0;
         for position in 0..permutations.len() {
@@ -128,21 +103,7 @@ impl Solver {
                 }
             }
         }
-        if index_type == IndexType::Combination {
-            return Self::combinations_to_index(&perm) as u64;
-        } else if index_type == IndexType::Permutation {
-            return Self::permutations_to_index(&perm, 8) as u64;
-        }
-        0
-    }
-
-    // helper function to get the permutation index on given positions in permutation
-    fn get_cube_permutation_index_at_position(permutations: &[u8], positions: [u8; 4], n: u8) -> u64 {
-        let mut perm = [0; 4];
-        for i in 0..4 {
-            perm[i] = permutations[positions[i] as usize];
-        }
-        Self::permutations_to_index(&perm, n) as u64
+        Self::combinations_to_index(&perm) as u64
     }
 
     fn is_solved_g0(cube: cube::Cube) -> bool { // edge orientations are all 0
@@ -159,7 +120,7 @@ impl Solver {
 
     pub fn get_g1_index(cube: cube::Cube) -> u64 {
         let corner_orientation_index = Self::orientations_to_index(&cube.corner_orientations, 3);
-        let lr_mid_slice_combination_index = Self::get_cubies_position_index(&cube.edge_permutations, &cube::Cube::LR_MID_SLICE_EDGES, IndexType::Combination);
+        let lr_mid_slice_combination_index = Self::get_cubies_position_index(&cube.edge_permutations, &cube::Cube::LR_MID_SLICE_EDGES);
         corner_orientation_index as u64 * 495 + lr_mid_slice_combination_index // 495: comb(12, 4)
     }
 
@@ -173,10 +134,10 @@ impl Solver {
     }
 
     pub fn get_g2_index(cube: cube::Cube) -> u64 {
-        let ud_mid_slice_combination_index = Self::get_cubies_position_index(&cube.edge_permutations, &cube::Cube::UD_MID_SLICE_EDGES, IndexType::Combination);
-        let ht1_i = Self::get_cubies_position_index(&cube.corner_permutations, &cube::Cube::HALF_TETRAD_1_CORNERS, IndexType::Combination);
-        let ht2_i = Self::get_cubies_position_index(&cube.corner_permutations, &cube::Cube::HALF_TETRAD_2_CORNERS, IndexType::Combination);
-        let ht3_i = Self::get_cubies_position_index(&cube.corner_permutations, &cube::Cube::HALF_TETRAD_3_CORNERS, IndexType::Combination);
+        let ud_mid_slice_combination_index = Self::get_cubies_position_index(&cube.edge_permutations, &cube::Cube::UD_MID_SLICE_EDGES);
+        let ht1_i = Self::get_cubies_position_index(&cube.corner_permutations, &cube::Cube::HALF_TETRAD_1_CORNERS);
+        let ht2_i = Self::get_cubies_position_index(&cube.corner_permutations, &cube::Cube::HALF_TETRAD_2_CORNERS);
+        let ht3_i = Self::get_cubies_position_index(&cube.corner_permutations, &cube::Cube::HALF_TETRAD_3_CORNERS);
         let ht_size = comb(8, 2);
         return ht1_i + ht_size*(ht2_i + ht_size*(ht3_i + ht_size*ud_mid_slice_combination_index));
     }
@@ -190,14 +151,9 @@ impl Solver {
     }
 
     pub fn get_g3_index(cube: cube::Cube) -> u64 {
-        let e1_index = Self::get_cube_permutation_index_at_position(&cube.edge_permutations, cube::Cube::LR_MID_SLICE_EDGES, 12);
-        let e2_index = Self::get_cube_permutation_index_at_position(&cube.edge_permutations, cube::Cube::UD_MID_SLICE_EDGES, 12);
-        let e3_index = Self::get_cube_permutation_index_at_position(&cube.edge_permutations, cube::Cube::FB_MID_SLICE_EDGES, 12);
-        let c1_index = Self::get_cube_permutation_index_at_position(&cube.corner_permutations, cube::Cube::TETRAD_1_CORNERS, 8);
-        let c2_index = Self::get_cube_permutation_index_at_position(&cube.corner_permutations, cube::Cube::TETRAD_2_CORNERS, 8);
-        let eperm_size = perm(12,4);
-        let cperm_size = perm(8,4);
-        return c1_index + cperm_size*(c2_index + cperm_size*(e1_index + eperm_size*(e2_index + eperm_size*e3_index)));
+        let e_perm_index = Self::permutations_to_index(&cube.edge_permutations);
+        let c_perm_index = Self::permutations_to_index(&cube.corner_permutations);
+        return c_perm_index + FACTORIALS[8] * e_perm_index;
     }
 
     fn is_solved_g3(cube: cube::Cube) -> bool {
