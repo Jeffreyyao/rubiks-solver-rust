@@ -11,9 +11,9 @@ pub struct PruneTable {
     table: HashMap<u64, u8>, // maps index to depth
 }
 
-pub const PRUNE_TABLE_G1_FILENAME: &str = "prune_tables/prune_table_g1.txt";
-pub const PRUNE_TABLE_G2_FILENAME: &str = "prune_tables/prune_table_g2.txt";
-pub const PRUNE_TABLE_G3_FILENAME: &str = "prune_tables/prune_table_g3.txt";
+pub const PRUNE_TABLE_G1_FILENAME: &str = "prune_tables/thistlethwaite_g1.txt";
+pub const PRUNE_TABLE_G2_FILENAME: &str = "prune_tables/thistlethwaite_g2.txt";
+pub const PRUNE_TABLE_G3_FILENAME: &str = "prune_tables/thistlethwaite_g3.txt";
 
 impl PruneTable {
     pub fn new() -> Self {
@@ -67,7 +67,7 @@ impl PruneTable {
 
     pub fn gen_g1() {
         let cube = cube::Cube::new();
-        let table = solver::Solver::gen_prune_table_g1(cube);
+        let table = solver::ThistlethwaiteSolver::gen_prune_table_g1(cube);
         table.save(PRUNE_TABLE_G1_FILENAME);
     }
 
@@ -77,7 +77,7 @@ impl PruneTable {
 
     pub fn gen_g2() {
         let cube = cube::Cube::new();
-        let table = solver::Solver::gen_prune_table_g2(cube);
+        let table = solver::ThistlethwaiteSolver::gen_prune_table_g2(cube);
         table.save(PRUNE_TABLE_G2_FILENAME);
     }
 
@@ -87,7 +87,7 @@ impl PruneTable {
     
     pub fn gen_g3() {
         let cube = cube::Cube::new();
-        let table = solver::Solver::gen_prune_table_g3(cube);
+        let table = solver::ThistlethwaiteSolver::gen_prune_table_g3(cube);
         table.save(PRUNE_TABLE_G3_FILENAME);
     }
 

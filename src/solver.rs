@@ -4,8 +4,6 @@ use crate::cube::{self, U, UP, U2, D, DP, D2, L, LP, L2, R, RP, R2, F, FP, F2, B
 use crate::profile;
 use crate::prune_table::PruneTable;
 
-pub struct Solver;
-
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum SolveMode {
     Bfs,
@@ -22,7 +20,9 @@ pub fn comb(n: u64, r: u64) -> u64 {
     FACTORIALS[n as usize] / (FACTORIALS[r as usize] * FACTORIALS[(n - r) as usize])
 }
 
-impl Solver {
+pub struct ThistlethwaiteSolver;
+
+impl ThistlethwaiteSolver {
     pub const G0_MOVES: [cube::Mov; 12] = [U, UP, D, DP, L, LP, R, RP, F, FP, B, BP];
     pub const G1_MOVES: [cube::Mov; 10] = [U2, D2, L, LP, R, RP, F, FP, B, BP];
     pub const G2_MOVES: [cube::Mov; 8] = [U2, D2, L, LP, R, RP, F2, B2];
