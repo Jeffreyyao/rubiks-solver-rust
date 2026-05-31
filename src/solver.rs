@@ -20,12 +20,12 @@ pub fn comb(n: u64, r: u64) -> u64 {
     FACTORIALS[n as usize] / (FACTORIALS[r as usize] * FACTORIALS[(n - r) as usize])
 }
 
-pub struct ThistlethwaiteSolver;
+pub struct Solver;
 
-impl ThistlethwaiteSolver {
-    pub const G0_MOVES: [cube::Mov; 12] = [U, UP, D, DP, L, LP, R, RP, F, FP, B, BP];
-    pub const G1_MOVES: [cube::Mov; 10] = [U2, D2, L, LP, R, RP, F, FP, B, BP];
-    pub const G2_MOVES: [cube::Mov; 8] = [U2, D2, L, LP, R, RP, F2, B2];
+impl Solver { // Thistlethwaite solver
+    pub const G0_MOVES: [cube::Mov; 18] = [U, UP, U2, D, DP, D2, L, LP, L2, R, RP, R2, F, FP, F2, B, BP, B2];
+    pub const G1_MOVES: [cube::Mov; 14] = [U2, D2, L, LP, L2, R, RP, R2, F, FP, F2, B, BP, B2];
+    pub const G2_MOVES: [cube::Mov; 10] = [U2, D2, L, LP, L2, R, RP, R2, F2, B2];
     pub const G3_MOVES: [cube::Mov; 6] = [U2, D2, L2, R2, F2, B2];
 
     pub fn solve_group(
@@ -164,8 +164,8 @@ impl ThistlethwaiteSolver {
 
     pub fn get_g1_index(cube: cube::Cube) -> u64 {
         let corner_orientation_index = Self::orientations_to_index(&cube.corner_orientations, 3);
-        let lr_mid_slice_combination_index = Self::get_cubies_position_index(&cube.edge_permutations, &cube::Cube::LR_MID_SLICE_EDGES);
-        corner_orientation_index as u64 * 495 + lr_mid_slice_combination_index // 495: comb(12, 4)
+        let lr_slice_combination_index = Self::get_cubies_position_index(&cube.edge_permutations, &cube::Cube::LR_SLICE_EDGES);
+        corner_orientation_index as u64 * 495 + lr_slice_combination_index // 495: comb(12, 4)
     }
 
     fn is_solved_g1(cube: cube::Cube) -> bool { // corner orientations are all 0; LR mid slice combination match
@@ -179,12 +179,12 @@ impl ThistlethwaiteSolver {
     }
 
     pub fn get_g2_index(cube: cube::Cube) -> u64 {
-        let ud_mid_slice_combination_index = Self::get_cubies_position_index(&cube.edge_permutations, &cube::Cube::UD_MID_SLICE_EDGES);
+        let ud_slice_comb_index = Self::get_cubies_position_index(&cube.edge_permutations, &cube::Cube::UD_SLICE_EDGES);
         let ht1_i = Self::get_cubies_position_index(&cube.corner_permutations, &cube::Cube::HALF_TETRAD_1_CORNERS);
         let ht2_i = Self::get_cubies_position_index(&cube.corner_permutations, &cube::Cube::HALF_TETRAD_2_CORNERS);
         let ht3_i = Self::get_cubies_position_index(&cube.corner_permutations, &cube::Cube::HALF_TETRAD_3_CORNERS);
         let ht_size = comb(8, 2);
-        return ht1_i + ht_size*(ht2_i + ht_size*(ht3_i + ht_size*ud_mid_slice_combination_index));
+        return ht1_i + ht_size*(ht2_i + ht_size*(ht3_i + ht_size*ud_slice_comb_index));
     }
 
     fn is_solved_g2(cube: cube::Cube) -> bool { // first, second & third half-tetrad combination match, ud mid slice combination match
@@ -217,7 +217,7 @@ impl ThistlethwaiteSolver {
         Self::solve_group("solve_g3".to_string(), SolveMode::Prune, cube, Some(Self::is_solved_g3), Self::get_g3_index, &Self::G3_MOVES, Some(&mut prune_table))
     }
 
-    pub fn solve(cube: cube::Cube, name: String, print_moves: bool) -> (bool, cube::Moves) {
+    pub fn solve_thistlethwaite(cube: cube::Cube, name: String, print_moves: bool) -> (bool, cube::Moves) {
         let p = profile::Profile::start(&name);
         let mut moves = cube::Moves(vec![]);
 
@@ -289,6 +289,45 @@ impl ThistlethwaiteSolver {
     pub fn gen_prune_table_g3(cube: cube::Cube) -> PruneTable {
         let mut table = PruneTable::new();
         Self::solve_group("gen_prune_table_g3".to_string(), SolveMode::PruneGen, cube, None, Self::get_g3_index, &Self::G3_MOVES, Some(&mut table));
+        table
+    }
+}
+
+impl Solver { // Kociemba solver
+    pub const PHASE1_MOVES: [cube::Mov; 18] = [U, UP, U2, D, DP, D2, L, LP, L2, R, RP, R2, F, FP, F2, B, BP, B2];
+
+    pub fn get_phase1_index(cube: cube::Cube) -> u64 {
+        let corner_orientation_index = Self::orientations_to_index(&cube.corner_orientations, 3);
+        let edge_orientation_index = Self::orientations_to_index(&cube.edge_orientations, 2);
+        let ud_slice_comb_index = Self::get_cubies_position_index(&cube.edge_permutations, &cube::Cube::UD_SLICE_EDGES);
+        ud_slice_comb_index + comb(12, 4) * (edge_orientation_index as u64 + 4096 * corner_orientation_index as u64)
+    }
+
+    pub fn is_solved_phase1(cube: cube::Cube) -> bool {
+        Self::get_phase1_index(cube) == 132234
+    }
+
+    pub fn solve_phase1(cube: cube::Cube) -> (bool, cube::Moves) {
+        Self::solve_group("solve_phase1".to_string(), SolveMode::Bfs, cube, Some(Self::is_solved_phase1), Self::get_phase1_index, &Self::PHASE1_MOVES, None)
+    }
+
+    pub fn solve_kociemba(cube: cube::Cube, name: String, print_moves: bool) -> (bool, cube::Moves) {
+        let p = profile::Profile::start(&name);
+
+        let (phase1_success, moves_phase1) = Self::solve_phase1(cube.clone());
+        let cube_phase1 = cube.apply_moves(moves_phase1.clone());
+        if print_moves {
+            println!("Phase1 Moves: {}", moves_phase1.to_string());
+            println!("{}", cube_phase1);
+        }
+
+        p.end();
+        (phase1_success, moves_phase1)
+    }
+
+    pub fn gen_prune_table_phase1(cube: cube::Cube) -> PruneTable {
+        let mut table = PruneTable::new();
+        Self::solve_group("gen_prune_table_phase1".to_string(), SolveMode::PruneGen, cube, None, Self::get_phase1_index, &Self::PHASE1_MOVES, Some(&mut table));
         table
     }
 }

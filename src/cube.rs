@@ -144,8 +144,8 @@ impl Cube {
     const B_CORNER_INDICES: [u8; 4] = [3, 2, 6, 7];
     const B_EDGE_INDICES: [u8; 4] = [2, 6, 10, 7];
 
-    pub const LR_MID_SLICE_EDGES: [u8; 4] = [0, 2, 8, 10];
-    pub const UD_MID_SLICE_EDGES: [u8; 4] = [4, 5, 6, 7];
+    pub const LR_SLICE_EDGES: [u8; 4] = [0, 2, 8, 10];
+    pub const UD_SLICE_EDGES: [u8; 4] = [4, 5, 6, 7];
     pub const HALF_TETRAD_1_CORNERS: [u8; 2] = [0, 2];
     pub const HALF_TETRAD_2_CORNERS: [u8; 2] = [5, 7];
     pub const HALF_TETRAD_3_CORNERS: [u8; 2] = [1, 3];
