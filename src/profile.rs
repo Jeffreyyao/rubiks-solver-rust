@@ -1,5 +1,6 @@
 use std::time::Instant;
 
+#[derive(Debug)]
 pub struct Profile {
     name: String,
     start_time: Option<Instant>,
@@ -13,7 +14,7 @@ impl Profile {
         };
     }
 
-    pub fn report(self, message: &str) {
+    pub fn report(&self, message: &str) {
         let elapsed = self.start_time.unwrap().elapsed();
         println!("[{}] {} in {:.3?}", self.name, message, elapsed);
     }

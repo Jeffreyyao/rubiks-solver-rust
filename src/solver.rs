@@ -2,8 +2,16 @@ use std::collections::{HashSet, VecDeque};
 
 use crate::cube::{self, U, UP, U2, D, DP, D2, L, LP, L2, R, RP, R2, F, FP, F2, B, BP, B2};
 use crate::profile;
+use crate::prune_table::PruneTable;
 
 pub struct Solver;
+
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+pub enum SolveMode {
+    Bfs,
+    PruneGen,
+    Prune,
+}
 
 const FACTORIALS: [u64; 13] = [1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800, 39916800, 479001600];
 
@@ -20,40 +28,76 @@ impl Solver {
     pub const G2_MOVES: [cube::Mov; 8] = [U2, D2, L, LP, R, RP, F2, B2];
     pub const G3_MOVES: [cube::Mov; 6] = [U2, D2, L2, R2, F2, B2];
 
-    fn solve_bfs(
+    pub fn solve_group(
+        name: String,
+        mode: SolveMode,
         cube: cube::Cube,
-        is_solved: fn(cube::Cube) -> bool,
+        is_solved: Option<fn(cube::Cube) -> bool>,
         fn_get_index: fn(cube::Cube) -> u64,
         moves: &[cube::Mov],
-        name: String,
+        mut prune_table: Option<&mut PruneTable>,
     ) -> (bool, cube::Moves) {
         let p = profile::Profile::start(&name);
-        if is_solved(cube) {
+        if is_solved.is_some() && is_solved.unwrap()(cube) {
             p.report("already solved");
             return (true, cube::Moves(vec![]));
         }
+
         let mut queue = VecDeque::from([(cube, cube::Moves(vec![]))]);
-        let mut visited_indices = HashSet::from([fn_get_index(cube)]);
+        let mut visited_indices = HashSet::from([]);
+        let mut pruned_cnt = 0;
+
         while let Some((current_cube, current_moves)) = queue.pop_front() {
-            if is_solved(current_cube) {
-                p.end();
+            if mode != SolveMode::PruneGen && is_solved.is_some() && is_solved.unwrap()(current_cube) {
+                if mode == SolveMode::Prune {
+                    p.report(&format!("solved, pruned cnt: {}", pruned_cnt));
+                } else {
+                    p.end();
+                }
                 return (true, current_moves);
             }
+            let current_index = fn_get_index(current_cube);
+            if visited_indices.contains(&current_index) {
+                continue;
+            }
+            if mode == SolveMode::Prune { // prune
+                if let Some(table) = prune_table.as_mut() {
+                    if let Some(depth) = table.get(current_index) {
+                        if current_moves.0.len() as u8 >= depth {
+                            pruned_cnt += 1;
+                            continue;
+                        }
+                    }
+                }
+            }
+            visited_indices.insert(current_index);
+
+            if mode == SolveMode::PruneGen { // prune generation
+                if let Some(table) = prune_table.as_mut() {
+                    table.insert(current_index, current_moves.0.len() as u8);
+                    if current_moves.0.len() as u8 > table.get_max_depth() {
+                        table.set_max_depth(current_moves.0.len() as u8);
+                        p.report(&format!("max depth: {}", table.get_max_depth()));
+                    }
+                }
+            }
+
             for m in moves {
                 if current_cube.prev_move.is_some() && current_cube.prev_move.unwrap().face == m.face {
                     continue; // skip next move of the same face
                 }
                 let new_cube = current_cube.apply_move(*m);
-                let new_index = fn_get_index(new_cube);
-                if !visited_indices.contains(&new_index) {
-                    visited_indices.insert(new_index);
-                    let mut new_moves = current_moves.clone();
-                    new_moves.push(*m);
-                    queue.push_back((new_cube, new_moves));
-                }
+                let mut new_moves = current_moves.clone();
+                new_moves.push(*m);
+                queue.push_back((new_cube, new_moves));
             }
         }
-        p.report(&format!("no solution found, visited states len: {}", visited_indices.len()));
+
+        if mode == SolveMode::PruneGen {
+            p.report(&format!("prune table generated, visited states len: {}", visited_indices.len()));
+        } else {
+            p.report(&format!("no solution found, visited states len: {}", visited_indices.len()));
+        }
         return (false, cube::Moves(vec![]));
     }
 
@@ -115,7 +159,7 @@ impl Solver {
     }
 
     pub fn solve_g0(cube: cube::Cube) -> (bool, cube::Moves) {
-        Self::solve_bfs(cube, Self::is_solved_g0, Self::get_g0_index, &Self::G0_MOVES, "solve_g0".to_string())
+        Self::solve_group("solve_g0".to_string(), SolveMode::Bfs, cube, Some(Self::is_solved_g0), Self::get_g0_index, &Self::G0_MOVES, None)
     }
 
     pub fn get_g1_index(cube: cube::Cube) -> u64 {
@@ -130,7 +174,8 @@ impl Solver {
     }
 
     pub fn solve_g1(cube: cube::Cube) -> (bool, cube::Moves) {
-        Self::solve_bfs(cube, Self::is_solved_g1, Self::get_g1_index, &Self::G1_MOVES, "solve_g1".to_string())
+        let mut prune_table = PruneTable::load_g1();
+        Self::solve_group("solve_g1".to_string(), SolveMode::Prune, cube, Some(Self::is_solved_g1), Self::get_g1_index, &Self::G1_MOVES, Some(&mut prune_table))
     }
 
     pub fn get_g2_index(cube: cube::Cube) -> u64 {
@@ -147,7 +192,8 @@ impl Solver {
     }
 
     pub fn solve_g2(cube: cube::Cube) -> (bool, cube::Moves) {
-        Self::solve_bfs(cube, Self::is_solved_g2, Self::get_g2_index, &Self::G2_MOVES, "solve_g2".to_string())
+        let mut prune_table = PruneTable::load_g2();
+        Self::solve_group("solve_g2".to_string(), SolveMode::Prune, cube, Some(Self::is_solved_g2), Self::get_g2_index, &Self::G2_MOVES, Some(&mut prune_table))
     }
 
     pub fn get_g3_index(cube: cube::Cube) -> u64 {
@@ -167,7 +213,8 @@ impl Solver {
     }
 
     pub fn solve_g3(cube: cube::Cube) -> (bool, cube::Moves) {
-        Self::solve_bfs(cube, Self::is_solved_g3, Self::get_g3_index, &Self::G3_MOVES, "solve_g3".to_string())
+        let mut prune_table = PruneTable::load_g3();
+        Self::solve_group("solve_g3".to_string(), SolveMode::Prune, cube, Some(Self::is_solved_g3), Self::get_g3_index, &Self::G3_MOVES, Some(&mut prune_table))
     }
 
     pub fn solve(cube: cube::Cube, name: String, print_moves: bool) -> (bool, cube::Moves) {
@@ -225,5 +272,23 @@ impl Solver {
         p.end();
         if print_moves { println!("Full solution ({} moves): {}", moves.0.len(), moves.to_string()); }
         return (true, moves);
+    }
+
+    pub fn gen_prune_table_g1(cube: cube::Cube) -> PruneTable {
+        let mut table = PruneTable::new();
+        Self::solve_group("gen_prune_table_g1".to_string(), SolveMode::PruneGen, cube, None, Self::get_g1_index, &Self::G1_MOVES, Some(&mut table));
+        table
+    }
+
+    pub fn gen_prune_table_g2(cube: cube::Cube) -> PruneTable {
+        let mut table = PruneTable::new();
+        Self::solve_group("gen_prune_table_g2".to_string(), SolveMode::PruneGen, cube, None, Self::get_g2_index, &Self::G2_MOVES, Some(&mut table));
+        table
+    }
+
+    pub fn gen_prune_table_g3(cube: cube::Cube) -> PruneTable {
+        let mut table = PruneTable::new();
+        Self::solve_group("gen_prune_table_g3".to_string(), SolveMode::PruneGen, cube, None, Self::get_g3_index, &Self::G3_MOVES, Some(&mut table));
+        table
     }
 }

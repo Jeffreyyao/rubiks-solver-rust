@@ -3,6 +3,7 @@ use std::{env, io};
 mod cube;
 mod solver;
 mod profile;
+mod prune_table;
 
 use crate::cube::*;
 
@@ -42,11 +43,17 @@ fn main() {
             println!("{}", cube);
             solver::Solver::solve(cube, "solve-fixed".to_string(), true);
         }
+        "prune-gen" => {
+            prune_table::PruneTable::gen_g1();
+            prune_table::PruneTable::gen_g2();
+            prune_table::PruneTable::gen_g3();
+        }
         "debug" => {
-            println!("{}", solver::Solver::get_cubies_position_index(&[3, 6, 0, 1, 4, 10, 11, 7, 2, 5, 8, 9], &[0, 2, 8, 10]));
+            let cube = cube::Cube::new().apply_moves(cube::Moves(vec![U, F]));
+            println!("{}", solver::Solver::get_g1_index(cube));
         }
         _ => {
-            println!("Usage: {} [sim|solve-rand|solve-fixed|debug]", args[0]);
+            println!("Usage: {} [sim|solve-rand|solve-fixed|prune-gen|debug]", args[0]);
         }
     }
 }
