@@ -11,13 +11,20 @@ pub enum SolveMode {
     Prune,
 }
 
-const FACTORIALS: [u64; 13] = [1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800, 39916800, 479001600];
+const FACTORIALS: [u32; 13] = [1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800, 39916800, 479001600];
 
-pub fn comb(n: u64, r: u64) -> u64 {
+pub fn comb(n: u32, r: u32) -> u32 {
     if n < r {
         return 0;
     } 
     FACTORIALS[n as usize] / (FACTORIALS[r as usize] * FACTORIALS[(n - r) as usize])
+}
+
+pub fn perm(n: u32, r: u32) -> u32 {
+    if n < r {
+        return 0;
+    } 
+    FACTORIALS[n as usize] / FACTORIALS[(n - r) as usize]
 }
 
 pub struct Solver;
@@ -33,7 +40,7 @@ impl Solver { // Thistlethwaite solver
         mode: SolveMode,
         cube: cube::Cube,
         is_solved: Option<fn(cube::Cube) -> bool>,
-        fn_get_index: fn(cube::Cube) -> u64,
+        fn_get_index: fn(cube::Cube) -> u32,
         moves: &[cube::Mov],
         mut prune_table: Option<&mut PruneTable>,
     ) -> (bool, cube::Moves) {
@@ -114,28 +121,39 @@ impl Solver { // Thistlethwaite solver
         c.sort();
         let mut index = 0;
         for i in (0..c.len()).rev() {
-            index += comb(c[i] as u64, (i + 1) as u64) as u32;
+            index += comb(c[i] as u32, (i + 1) as u32) as u32;
         }
         index
     }
 
-    pub fn permutations_to_index(permutations: &[u8]) -> u64 { // n: size of all allowed elements
-        let mut index = 0;
-        let n = permutations.len();
-        for i in 0..n {
-            let mut count = 0;
-            for j in i+1..n {
-                if permutations[j] < permutations[i] {
+    pub fn permutations_to_index(permutations: &[u8], n: u8) -> u32 { // n: size of all allowed elements
+        let k = permutations.len() as u8;
+        let mut index: u32 = 0;
+        let mut used = vec![false; 12];
+
+        for i in 0..k as usize {
+            let p = permutations[i];
+            let mut count = 0u32;
+            for j in 0..p {
+                if !used[j as usize] {
                     count += 1;
                 }
             }
-            index += count * FACTORIALS[(n - i - 1) as usize];
+            let remaining_after_this = n - i as u8 - 1;
+            let still_to_choose = k - i as u8 - 1;
+            let multiplier = if still_to_choose == 0 {
+                1
+            } else {
+                perm(remaining_after_this as u32, still_to_choose as u32) as u32
+            };
+            index += count * multiplier as u32;
+            used[p as usize] = true;
         }
         index
     }
 
     // helper function to get the combination index of cubie positions in permutation
-    pub fn get_cubies_position_index<const N: usize>(permutations: &[u8], cubies: &[u8; N]) -> u64 {
+    pub fn get_cubies_position_index<const N: usize>(permutations: &[u8], cubies: &[u8; N]) -> u32 {
         let mut perm = [0u8; N];
         let mut i = 0;
         for position in 0..permutations.len() {
@@ -147,25 +165,34 @@ impl Solver { // Thistlethwaite solver
                 }
             }
         }
-        Self::combinations_to_index(&perm) as u64
+        Self::combinations_to_index(&perm) as u32
+    }
+
+    // helper function to get the permutation index on given positions in permutation
+    fn get_cube_permutation_index_at_position(permutations: &[u8], positions: [u8; 4]) -> u32 {
+        let mut perm = [0; 4];
+        for i in 0..4 {
+            perm[i] = permutations[positions[i] as usize];
+        }
+        Self::permutations_to_index(&perm, 8)
     }
 
     fn is_solved_g0(cube: cube::Cube) -> bool { // edge orientations are all 0
         cube.edge_orientations == [0; 12]
     }
 
-    fn get_g0_index(cube: cube::Cube) -> u64 {
-        Self::orientations_to_index(&cube.edge_orientations, 2) as u64
+    fn get_g0_index(cube: cube::Cube) -> u32 {
+        Self::orientations_to_index(&cube.edge_orientations, 2) as u32
     }
 
     pub fn solve_g0(cube: cube::Cube) -> (bool, cube::Moves) {
         Self::solve_group("solve_g0".to_string(), SolveMode::Bfs, cube, Some(Self::is_solved_g0), Self::get_g0_index, &Self::G0_MOVES, None)
     }
 
-    pub fn get_g1_index(cube: cube::Cube) -> u64 {
+    pub fn get_g1_index(cube: cube::Cube) -> u32 {
         let corner_orientation_index = Self::orientations_to_index(&cube.corner_orientations, 3);
         let lr_slice_combination_index = Self::get_cubies_position_index(&cube.edge_permutations, &cube::Cube::LR_SLICE_EDGES);
-        corner_orientation_index as u64 * 495 + lr_slice_combination_index // 495: comb(12, 4)
+        corner_orientation_index as u32 * 495 + lr_slice_combination_index // 495: comb(12, 4)
     }
 
     fn is_solved_g1(cube: cube::Cube) -> bool { // corner orientations are all 0; LR mid slice combination match
@@ -178,7 +205,7 @@ impl Solver { // Thistlethwaite solver
         Self::solve_group("solve_g1".to_string(), SolveMode::Prune, cube, Some(Self::is_solved_g1), Self::get_g1_index, &Self::G1_MOVES, Some(&mut prune_table))
     }
 
-    pub fn get_g2_index(cube: cube::Cube) -> u64 {
+    pub fn get_g2_index(cube: cube::Cube) -> u32 {
         let ud_slice_comb_index = Self::get_cubies_position_index(&cube.edge_permutations, &cube::Cube::UD_SLICE_EDGES);
         let ht1_i = Self::get_cubies_position_index(&cube.corner_permutations, &cube::Cube::HALF_TETRAD_1_CORNERS);
         let ht2_i = Self::get_cubies_position_index(&cube.corner_permutations, &cube::Cube::HALF_TETRAD_2_CORNERS);
@@ -196,10 +223,14 @@ impl Solver { // Thistlethwaite solver
         Self::solve_group("solve_g2".to_string(), SolveMode::Prune, cube, Some(Self::is_solved_g2), Self::get_g2_index, &Self::G2_MOVES, Some(&mut prune_table))
     }
 
-    pub fn get_g3_index(cube: cube::Cube) -> u64 {
-        let e_perm_index = Self::permutations_to_index(&cube.edge_permutations);
-        let c_perm_index = Self::permutations_to_index(&cube.corner_permutations);
-        return c_perm_index + FACTORIALS[8] * e_perm_index;
+    pub fn get_g3_index(cube: cube::Cube) -> u32 {
+        let e1_index = Self::get_cube_permutation_index_at_position(&cube.edge_permutations, cube::Cube::LR_SLICE_EDGES);
+        let e2_index = Self::get_cube_permutation_index_at_position(&cube.edge_permutations, cube::Cube::UD_SLICE_EDGES);
+        let e3_index = Self::get_cube_permutation_index_at_position(&cube.edge_permutations, cube::Cube::FB_SLICE_EDGES);
+        let c1_index = Self::get_cube_permutation_index_at_position(&cube.corner_permutations, cube::Cube::TETRAD_1_CORNERS);
+        let c2_index = Self::get_cube_permutation_index_at_position(&cube.corner_permutations, cube::Cube::TETRAD_2_CORNERS);
+        let perm_size = perm(4,4);
+        return e1_index + perm_size*(e2_index + perm_size*(e3_index + perm_size*(c1_index + perm_size*c2_index)));
     }
 
     fn is_solved_g3(cube: cube::Cube) -> bool {
@@ -296,11 +327,11 @@ impl Solver { // Thistlethwaite solver
 impl Solver { // Kociemba solver
     pub const PHASE1_MOVES: [cube::Mov; 18] = [U, UP, U2, D, DP, D2, L, LP, L2, R, RP, R2, F, FP, F2, B, BP, B2];
 
-    pub fn get_phase1_index(cube: cube::Cube) -> u64 {
+    pub fn get_phase1_index(cube: cube::Cube) -> u32 {
         let corner_orientation_index = Self::orientations_to_index(&cube.corner_orientations, 3);
         let edge_orientation_index = Self::orientations_to_index(&cube.edge_orientations, 2);
         let ud_slice_comb_index = Self::get_cubies_position_index(&cube.edge_permutations, &cube::Cube::UD_SLICE_EDGES);
-        ud_slice_comb_index + comb(12, 4) * (edge_orientation_index as u64 + 4096 * corner_orientation_index as u64)
+        ud_slice_comb_index + comb(12, 4) * (edge_orientation_index as u32 + 4096 * corner_orientation_index as u32)
     }
 
     pub fn is_solved_phase1(cube: cube::Cube) -> bool {
