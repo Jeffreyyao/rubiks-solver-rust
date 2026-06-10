@@ -36,6 +36,18 @@ fn main() {
             println!("{}", cube);
             solver::Solver::solve_thistlethwaite(cube, "solve-rand".to_string(), true);
         }
+        "solve-rand-stat" => {
+            let trials = 100;
+            let mut success_count = 0;
+            for i in 0..trials {
+                let (cube, _) = cube::Cube::new().scramble(25);
+                let (success, _) = solver::Solver::solve_thistlethwaite(cube, "solve-rand".to_string(), false);
+                if success {
+                    success_count += 1;
+                }
+                println!("Trial {}: Success rate: {:.2}%", i + 1, success_count as f32 / (i + 1) as f32 * 100.0);
+            }
+        }
         "solve-fixed" => {
             let moves = cube::Moves(vec![L2, U, F2, DP, F, U, F, D2, BP, F2, RP, BP, U2, RP, D2, R, L, DP, U, D, L2, DP, UP, B2, F]);
             let cube = cube::Cube::new().apply_moves(moves.clone());
@@ -43,23 +55,16 @@ fn main() {
             println!("{}", cube);
             solver::Solver::solve_thistlethwaite(cube, "solve-fixed".to_string(), true);
         }
-        "solve-rand-kociemba" => {
-            let (cube, scrambled_moves) = cube::Cube::new().scramble(25);
-            println!("Scrambled moves: {}", scrambled_moves.to_string());
-            println!("{}", cube);
-            solver::Solver::solve_kociemba(cube, "solve-rand-kociemba".to_string(), true);
-        }
         "prune-gen" => {
             prune_table::PruneTable::gen_g1();
             prune_table::PruneTable::gen_g2();
             prune_table::PruneTable::gen_g3();
         }
-        "prune-gen-kociemba" => {
-            prune_table::PruneTable::gen_phase1();
-        }
         "debug" => {
             let cube = cube::Cube::new();
-            println!("{}", solver::Solver::get_phase1_index(cube));
+            println!("{}", solver::Solver::get_g1_index(cube));
+            println!("{}", solver::Solver::get_g2_index(cube));
+            println!("{}", solver::Solver::get_g3_index(cube));
         }
         _ => {
             println!("Usage: {} [sim|solve-rand|solve-fixed|prune-gen|debug]", args[0]);

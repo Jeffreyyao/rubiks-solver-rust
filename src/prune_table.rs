@@ -14,7 +14,6 @@ pub struct PruneTable {
 pub const PRUNE_TABLE_G1_FILENAME: &str = "prune_tables/thistlethwaite_g1";
 pub const PRUNE_TABLE_G2_FILENAME: &str = "prune_tables/thistlethwaite_g2";
 pub const PRUNE_TABLE_G3_FILENAME: &str = "prune_tables/thistlethwaite_g3";
-pub const PRUNE_TABLE_PHASE1_FILENAME: &str = "prune_tables/kociemba_phase1";
 
 impl PruneTable {
     pub fn new() -> Self {
@@ -94,15 +93,5 @@ impl PruneTable {
 
     pub fn load_g3() -> Self {
         Self::load(PRUNE_TABLE_G3_FILENAME).unwrap()
-    }
-
-    pub fn gen_phase1() {
-        let cube = cube::Cube::new();
-        let table = solver::Solver::gen_prune_table_phase1(cube);
-        let _ = table.save(PRUNE_TABLE_PHASE1_FILENAME);
-    }
-
-    pub fn load_phase1() -> Self {
-        Self::load(PRUNE_TABLE_PHASE1_FILENAME).unwrap()
     }
 }

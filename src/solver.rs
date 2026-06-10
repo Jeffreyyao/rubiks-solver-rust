@@ -44,7 +44,7 @@ impl Solver { // Thistlethwaite solver
         moves: &[cube::Mov],
         mut prune_table: Option<&mut PruneTable>,
     ) -> (bool, cube::Moves) {
-        let p = profile::Profile::start(&name);
+        let p = profile::Profile::start(&name, false);
         if is_solved.is_some() && is_solved.unwrap()(cube) {
             p.report("already solved");
             return (true, cube::Moves(vec![]));
@@ -249,7 +249,7 @@ impl Solver { // Thistlethwaite solver
     }
 
     pub fn solve_thistlethwaite(cube: cube::Cube, name: String, print_moves: bool) -> (bool, cube::Moves) {
-        let p = profile::Profile::start(&name);
+        let p = profile::Profile::start(&name, print_moves);
         let mut moves = cube::Moves(vec![]);
 
         let (g0_success, moves_g0) = Self::solve_g0(cube.clone());
@@ -320,45 +320,6 @@ impl Solver { // Thistlethwaite solver
     pub fn gen_prune_table_g3(cube: cube::Cube) -> PruneTable {
         let mut table = PruneTable::new();
         Self::solve_group("gen_prune_table_g3".to_string(), SolveMode::PruneGen, cube, None, Self::get_g3_index, &Self::G3_MOVES, Some(&mut table));
-        table
-    }
-}
-
-impl Solver { // Kociemba solver
-    pub const PHASE1_MOVES: [cube::Mov; 18] = [U, UP, U2, D, DP, D2, L, LP, L2, R, RP, R2, F, FP, F2, B, BP, B2];
-
-    pub fn get_phase1_index(cube: cube::Cube) -> u32 {
-        let corner_orientation_index = Self::orientations_to_index(&cube.corner_orientations, 3);
-        let edge_orientation_index = Self::orientations_to_index(&cube.edge_orientations, 2);
-        let ud_slice_comb_index = Self::get_cubies_position_index(&cube.edge_permutations, &cube::Cube::UD_SLICE_EDGES);
-        ud_slice_comb_index + comb(12, 4) * (edge_orientation_index as u32 + 4096 * corner_orientation_index as u32)
-    }
-
-    pub fn is_solved_phase1(cube: cube::Cube) -> bool {
-        Self::get_phase1_index(cube) == 132234
-    }
-
-    pub fn solve_phase1(cube: cube::Cube) -> (bool, cube::Moves) {
-        Self::solve_group("solve_phase1".to_string(), SolveMode::Bfs, cube, Some(Self::is_solved_phase1), Self::get_phase1_index, &Self::PHASE1_MOVES, None)
-    }
-
-    pub fn solve_kociemba(cube: cube::Cube, name: String, print_moves: bool) -> (bool, cube::Moves) {
-        let p = profile::Profile::start(&name);
-
-        let (phase1_success, moves_phase1) = Self::solve_phase1(cube.clone());
-        let cube_phase1 = cube.apply_moves(moves_phase1.clone());
-        if print_moves {
-            println!("Phase1 Moves: {}", moves_phase1.to_string());
-            println!("{}", cube_phase1);
-        }
-
-        p.end();
-        (phase1_success, moves_phase1)
-    }
-
-    pub fn gen_prune_table_phase1(cube: cube::Cube) -> PruneTable {
-        let mut table = PruneTable::new();
-        Self::solve_group("gen_prune_table_phase1".to_string(), SolveMode::PruneGen, cube, None, Self::get_phase1_index, &Self::PHASE1_MOVES, Some(&mut table));
         table
     }
 }
